@@ -12,7 +12,7 @@ An R package for analyzing phenotypic plasticity, genotype-environment interacti
 
 ```r
 # Install from GitHub
-devtools::install_github("yourusername/phenop")  # Replace "yourusername" with your GitHub username
+devtools::install_github("leonelstazione/phenop")
 
 # Load the package
 library(phenop)
@@ -53,15 +53,15 @@ plot_reaction_norm(
 Main Functions
 
 Function	Description	Status
-anova_plasticity()	ANOVA for G×E interactions	✅ 100% test coverage
-multidim_plasticity()	Multidimensional Plasticity Index (MPI)	✅ 93.94% test coverage
-plot_reaction_norm()	Reaction norm plots	✅ 100% test coverage
-simulate_plasticity_data()	Plasticity data simulation	✅ 100% test coverage
-plasticity_meta_analysis()	Meta-analysis of plasticity effects	🟡 0% coverage (in development)
-optimize_multidim_environment()	Environment optimization	🟡 0% coverage (in development)
-host_pathogen_interaction()	Host-pathogen interaction analysis	🟡 In development
-plasticity_tradeoffs()	Trade-off analysis	✅ 17.78% coverage
-safe_multidim_plasticity()	Error-tolerant plasticity analysis	✅ 51.28% coverage
+anova_plasticity()	ANOVA for G×E interactions 100% test coverage
+multidim_plasticity()	Multidimensional Plasticity Index (MPI)	93.94% test coverage
+plot_reaction_norm()	Reaction norm plots	100% test coverage
+simulate_plasticity_data()	Plasticity data simulation	100% test coverage
+plasticity_meta_analysis()	Meta-analysis of plasticity effects	0% coverage (in development)
+optimize_multidim_environment()	Environment optimization	0% coverage (in development)
+host_pathogen_interaction()	Host-pathogen interaction analysis	In development
+plasticity_tradeoffs()	Trade-off analysis	17.78% coverage
+safe_multidim_plasticity()	Error-tolerant plasticity analysis	51.28% coverage
 
 Detailed Examples
 

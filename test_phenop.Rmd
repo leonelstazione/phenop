@@ -1,0 +1,808 @@
+```{r}
+# ============================================================================
+# SCRIPT TO CREATE TEST STRUCTURE FOR phenop PACKAGE
+# ============================================================================
+# This script sets up a comprehensive test suite using testthat
+# ============================================================================
+
+cat("============================================================\n")
+cat("           SETTING UP TEST STRUCTURE FOR phenop             \n")
+cat("============================================================\n\n")
+
+# ----------------------------------------------------------------------------
+# 1. CHECK CURRENT STATUS
+# ----------------------------------------------------------------------------
+cat("1. CHECKING CURRENT TEST STATUS\n")
+cat(rep("-", 60), "\n")
+
+# Check if tests folder exists
+if (dir.exists("tests")) {
+  cat("✓ tests/ folder exists\n")
+  test_files <- list.files("tests", pattern = "\\.R$", recursive = TRUE)
+  cat("  Found", length(test_files), "test files\n")
+} else {
+  cat("✗ tests/ folder does not exist (will be created)\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 2. INSTALL/CONFIGURE testthat
+# ----------------------------------------------------------------------------
+cat("\n2. CONFIGURING testthat\n")
+cat(rep("-", 60), "\n")
+
+# Check if testthat is installed
+if (!requireNamespace("testthat", quietly = TRUE)) {
+  cat("Installing testthat package...\n")
+  install.packages("testthat", quiet = TRUE)
+  cat("✓ testthat installed\n")
+} else {
+  cat("✓ testthat already installed\n")
+}
+
+library(testthat)
+
+# Check if testthat is in Suggests in DESCRIPTION
+desc_file <- "DESCRIPTION"
+if (file.exists(desc_file)) {
+  desc_content <- readLines(desc_file, warn = FALSE)
+  
+  # Check for Suggests section
+  suggests_line <- grep("^Suggests:", desc_content)
+  if (length(suggests_line) > 0) {
+    suggests_content <- desc_content[suggests_line]
+    if (!grepl("testthat", suggests_content)) {
+      # Add testthat to Suggests
+      cat("Adding testthat to Suggests in DESCRIPTION...\n")
+      desc_content[suggests_line] <- paste0(suggests_content, "\n    testthat,")
+      writeLines(desc_content, desc_file)
+      cat("✓ testthat added to Suggests\n")
+    } else {
+      cat("✓ testthat already in Suggests\n")
+    }
+  } else {
+    # Create Suggests section
+    cat("Creating Suggests section in DESCRIPTION...\n")
+    suggests_line <- grep("^Imports:", desc_content)
+    if (length(suggests_line) > 0) {
+      # Insert after Imports
+      new_desc <- c(
+        desc_content[1:suggests_line],
+        "Suggests:",
+        "    testthat,",
+        desc_content[(suggests_line + 1):length(desc_content)]
+      )
+      writeLines(new_desc, desc_file)
+      cat("✓ Suggests section created with testthat\n")
+    }
+  }
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 3. CREATE TEST DIRECTORY STRUCTURE
+# ----------------------------------------------------------------------------
+cat("\n3. CREATING TEST DIRECTORY STRUCTURE\n")
+cat(rep("-", 60), "\n")
+
+# Create tests directory if it doesn't exist
+if (!dir.exists("tests")) {
+  dir.create("tests", showWarnings = FALSE)
+  cat("✓ Created tests/ directory\n")
+}
+
+# Create testthat directory
+testthat_dir <- "tests/testthat"
+if (!dir.exists(testthat_dir)) {
+  dir.create(testthat_dir, recursive = TRUE, showWarnings = FALSE)
+  cat("✓ Created tests/testthat/ directory\n")
+}
+
+# Create test helper directory
+test_helpers_dir <- "tests/testthat/helpers"
+if (!dir.exists(test_helpers_dir)) {
+  dir.create(test_helpers_dir, recursive = TRUE, showWarnings = FALSE)
+  cat("✓ Created tests/testthat/helpers/ directory\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 4. CREATE MAIN TEST RUNNER FILE
+# ----------------------------------------------------------------------------
+cat("\n4. CREATING MAIN TEST RUNNER\n")
+cat(rep("-", 60), "\n")
+
+# Create tests/testthat.R (entry point for R CMD check)
+testthat_runner <- "tests/testthat.R"
+if (!file.exists(testthat_runner)) {
+  runner_content <- '# This file is the entry point for running tests with R CMD check
+# Do not edit unless you know what you are doing
+
+library(testthat)
+library(phenop)
+
+# Run all tests
+test_check("phenop")'
+  
+  writeLines(runner_content, testthat_runner)
+  cat("✓ Created tests/testthat.R\n")
+} else {
+  cat("✓ tests/testthat.R already exists\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 5. CREATE TEST HELPER FILES
+# ----------------------------------------------------------------------------
+cat("\n5. CREATING TEST HELPER FILES\n")
+cat(rep("-", 60), "\n")
+
+# Create setup.R (runs before tests)
+setup_file <- "tests/testthat/setup.R"
+if (!file.exists(setup_file)) {
+  setup_content <- '# Setup file: runs before tests
+# Load any required packages or set up test environment
+
+cat("Setting up test environment...\\n")
+
+# Load the package
+library(phenop)
+
+# Create test data
+create_test_data <- function() {
+  set.seed(123)
+  data.frame(
+    id = 1:10,
+    value = rnorm(10),
+    group = rep(c("A", "B"), each = 5)
+  )
+}
+
+# Make test data available
+test_data <- create_test_data()
+
+cat("Test environment ready\\n")'
+  
+  writeLines(setup_content, setup_file)
+  cat("✓ Created tests/testthat/setup.R\n")
+}
+
+# Create teardown.R (runs after tests)
+teardown_file <- "tests/testthat/teardown.R"
+if (!file.exists(teardown_file)) {
+  teardown_content <- '# Teardown file: runs after tests
+# Clean up any test files or objects
+
+cat("Cleaning up test environment...\\n")
+
+# Remove any temporary files
+temp_files <- list.files(tempdir(), pattern = "^test_", full.names = TRUE)
+if (length(temp_files) > 0) {
+  file.remove(temp_files)
+}
+
+# Clear any test objects from global environment
+rm(list = ls(pattern = "^test_", envir = .GlobalEnv), envir = .GlobalEnv)
+
+cat("Test environment cleaned\\n")'
+  
+  writeLines(teardown_content, teardown_file)
+  cat("✓ Created tests/testthat/teardown.R\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 6. CREATE EXAMPLE TESTS FOR YOUR FUNCTIONS
+# ----------------------------------------------------------------------------
+cat("\n6. CREATING EXAMPLE TESTS\n")
+cat(rep("-", 60), "\n")
+
+# Example 1: Tests for safe_multidim_plasticity
+test_safe_file <- "tests/testthat/test_safe_multidim_plasticity.R"
+if (!file.exists(test_safe_file)) {
+  test_safe_content <- '# Tests for safe_multidim_plasticity function
+
+test_that("safe_multidim_plasticity returns correct structure", {
+  # Skip test if function not available
+  skip_if_not_installed("phenop")
+  
+  # Create test data
+  test_data <- data.frame(
+    insect_population = rep(c("Pop1", "Pop2"), each = 5),
+    temperature = rep(c(20, 25), each = 5),
+    humidity = rep(c(50, 60), each = 5),
+    insect_size = rnorm(10, 10, 2),
+    resistance = rnorm(10, 5, 1)
+  )
+  
+  # Run function
+  result <- safe_multidim_plasticity(
+    test_data,
+    traits = c("insect_size", "resistance"),
+    environments = c("temperature", "humidity"),
+    groups = "insect_population"
+  )
+  
+  # Test structure
+  expect_type(result, "list")
+  expect_named(result, c("individual_plasticity", "multidimensional_index", 
+                         "success", "message"))
+  expect_true(is.data.frame(result$individual_plasticity))
+  expect_true(result$success %in% c(TRUE, FALSE))
+})
+
+test_that("safe_multidim_plasticity handles missing data", {
+  skip_if_not_installed("phenop")
+  
+  # Create data with missing values
+  test_data <- data.frame(
+    insect_population = c("Pop1", "Pop2", "Pop1", "Pop2"),
+    temperature = c(20, 25, 20, 25),
+    humidity = c(50, 60, 50, 60),
+    insect_size = c(10, NA, 12, 11),
+    resistance = c(5, 6, NA, 7)
+  )
+  
+  # Should work with na.action = "omit"
+  result <- safe_multidim_plasticity(
+    test_data,
+    traits = c("insect_size", "resistance"),
+    environments = c("temperature", "humidity"),
+    groups = "insect_population",
+    na.action = "omit"
+  )
+  
+  expect_type(result, "list")
+})
+
+test_that("safe_multidim_plasticity validates inputs", {
+  skip_if_not_installed("phenop")
+  
+  # Create minimal test data
+  test_data <- data.frame(
+    insect_population = c("Pop1", "Pop2"),
+    temperature = c(20, 25),
+    humidity = c(50, 60),
+    insect_size = c(10, 12),
+    resistance = c(5, 6)
+  )
+  
+  # Test with invalid column name
+  expect_error(
+    safe_multidim_plasticity(
+      test_data,
+      traits = c("nonexistent_column"),
+      environments = c("temperature"),
+      groups = "insect_population"
+    ),
+    regexp = "Missing columns"
+  )
+})
+
+test_that("multidimensional_index is calculated correctly", {
+  skip_if_not_installed("phenop")
+  
+  test_data <- data.frame(
+    insect_population = rep(c("Pop1", "Pop2"), each = 3),
+    temperature = rep(c(20, 25, 30), times = 2),
+    humidity = rep(c(50, 55, 60), times = 2),
+    insect_size = rnorm(6, 10, 1),
+    resistance = rnorm(6, 5, 0.5)
+  )
+  
+  result <- safe_multidim_plasticity(
+    test_data,
+    traits = c("insect_size", "resistance"),
+    environments = c("temperature", "humidity"),
+    groups = "insect_population"
+  )
+  
+  # Check that MPI is a numeric value
+  expect_type(result$multidimensional_index$index, "double")
+  expect_true(result$multidimensional_index$index >= 0)
+  expect_true(result$multidimensional_index$index <= 1)
+})
+
+# Performance test
+test_that("function handles large datasets efficiently", {
+  skip_if_not_installed("phenop")
+  skip_on_cran()  # Skip on CRAN to avoid timeouts
+  
+  # Create larger dataset
+  n <- 100
+  test_data <- data.frame(
+    insect_population = rep(paste0("Pop", 1:10), each = n/10),
+    temperature = rep(seq(20, 30, length.out = 5), times = n/5),
+    humidity = rep(seq(40, 80, length.out = 5), times = n/5),
+    insect_size = rnorm(n, 10, 2),
+    resistance = rnorm(n, 5, 1)
+  )
+  
+  # Time the function
+  execution_time <- system.time({
+    result <- safe_multidim_plasticity(
+      test_data,
+      traits = c("insect_size", "resistance"),
+      environments = c("temperature", "humidity"),
+      groups = "insect_population"
+    )
+  })
+  
+  # Should complete in reasonable time (adjust as needed)
+  expect_true(execution_time["elapsed"] < 5)  # Less than 5 seconds
+  expect_true(result$success)
+})'
+  
+  writeLines(test_safe_content, test_safe_file)
+  cat("✓ Created tests/testthat/test_safe_multidim_plasticity.R\n")
+  cat("  Contains 5 test cases for safe_multidim_plasticity\n")
+}
+
+# Example 2: Tests for plasticity_tradeoffs_extended
+test_tradeoff_file <- "tests/testthat/test_plasticity_tradeoffs_extended.R"
+if (!file.exists(test_tradeoff_file)) {
+  test_tradeoff_content <- '# Tests for plasticity_tradeoffs_extended function
+
+test_that("plasticity_tradeoffs_extended returns correct structure", {
+  skip_if_not_installed("phenop")
+  
+  # First create a plasticity result object
+  test_data <- data.frame(
+    insect_population = rep(c("Pop1", "Pop2", "Pop3"), each = 4),
+    temperature = rep(c(20, 25), times = 6),
+    humidity = rep(c(50, 60), times = 6),
+    insect_size = rnorm(12, 10, 2),
+    resistance = rnorm(12, 5, 1)
+  )
+  
+  plasticity_result <- safe_multidim_plasticity(
+    test_data,
+    traits = c("insect_size", "resistance"),
+    environments = c("temperature", "humidity"),
+    groups = "insect_population"
+  )
+  
+  # Run tradeoff analysis
+  tradeoff_result <- plasticity_tradeoffs_extended(
+    plasticity_result,
+    method = "correlation",
+    threshold = -0.5
+  )
+  
+  # Test structure
+  expect_type(tradeoff_result, "list")
+  expect_true("correlation_matrix" %in% names(tradeoff_result) || 
+              "success" %in% names(tradeoff_result))
+})
+
+test_that("tradeoff analysis handles edge cases", {
+  skip_if_not_installed("phenop")
+  
+  # Create minimal data
+  test_data <- data.frame(
+    insect_population = c("Pop1", "Pop2"),
+    temperature = c(20, 25),
+    humidity = c(50, 60),
+    insect_size = c(10, 12),
+    resistance = c(5, 6)
+  )
+  
+  plasticity_result <- safe_multidim_plasticity(
+    test_data,
+    traits = c("insect_size", "resistance"),
+    environments = c("temperature", "humidity"),
+    groups = "insect_population"
+  )
+  
+  # Should handle minimal data gracefully
+  tradeoff_result <- plasticity_tradeoffs_extended(
+    plasticity_result,
+    method = "correlation"
+  )
+  
+  expect_type(tradeoff_result, "list")
+})
+
+test_that("different methods are handled", {
+  skip_if_not_installed("phenop")
+  skip("Method tests to be implemented")
+  
+  # Placeholder for testing different methods
+  # expect_error(...) for invalid methods
+  # expect_warning(...) for unimplemented methods
+})'
+  
+  writeLines(test_tradeoff_content, test_tradeoff_file)
+  cat("✓ Created tests/testthat/test_plasticity_tradeoffs_extended.R\n")
+  cat("  Contains 3 test cases for plasticity_tradeoffs_extended\n")
+}
+
+# Example 3: Tests for demo_data dataset
+test_data_file <- "tests/testthat/test_datasets.R"
+if (!file.exists(test_data_file)) {
+  test_data_content <- '# Tests for datasets in the package
+
+test_that("demo_data has correct structure", {
+  skip_if_not_installed("phenop")
+  
+  # Load dataset
+  data(demo_data)
+  
+  # Test structure
+  expect_s3_class(demo_data, "data.frame")
+  expect_equal(ncol(demo_data), 8)
+  expect_true(nrow(demo_data) > 0)
+  
+  # Check column names
+  expected_cols <- c("insect_population", "fungus_strain", "temperature",
+                     "humidity", "insect_size", "resistance",
+                     "fungus_growth", "virulence")
+  expect_named(demo_data, expected_cols)
+  
+  # Check data types
+  expect_type(demo_data$insect_population, "character")
+  expect_type(demo_data$fungus_strain, "character")
+  expect_type(demo_data$temperature, "double")
+  expect_type(demo_data$humidity, "double")
+  expect_type(demo_data$insect_size, "double")
+  expect_type(demo_data$resistance, "double")
+  expect_type(demo_data$fungus_growth, "double")
+  expect_type(demo_data$virulence, "double")
+})
+
+test_that("demo_data has reasonable values", {
+  skip_if_not_installed("phenop")
+  
+  data(demo_data)
+  
+  # Check value ranges
+  expect_true(all(demo_data$temperature >= 10 & demo_data$temperature <= 35))
+  expect_true(all(demo_data$humidity >= 30 & demo_data$humidity <= 90))
+  expect_true(all(demo_data$insect_size > 0))
+  expect_true(all(demo_data$resistance > 0))
+  expect_true(all(demo_data$fungus_growth > 0))
+  expect_true(all(demo_data$virulence > 0))
+  
+  # Check for missing values
+  expect_false(any(is.na(demo_data)))
+})
+
+test_that("dataset can be used in analysis functions", {
+  skip_if_not_installed("phenop")
+  
+  data(demo_data)
+  
+  # Prepare data
+  insect_data <- demo_data %>%
+    dplyr::select(insect_population, temperature, humidity,
+                  insect_size, resistance) %>%
+    dplyr::distinct()
+  
+  # Should work without errors
+  expect_error(
+    safe_multidim_plasticity(
+      insect_data,
+      traits = c("insect_size", "resistance"),
+      environments = c("temperature", "humidity"),
+      groups = "insect_population"
+    ),
+    NA  # Expect no error
+  )
+})'
+  
+  writeLines(test_data_content, test_data_file)
+  cat("✓ Created tests/testthat/test_datasets.R\n")
+  cat("  Contains 3 test cases for demo_data\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 7. CREATE A COMPREHENSIVE TEST TEMPLATE
+# ----------------------------------------------------------------------------
+cat("\n7. CREATING TEST TEMPLATES\n")
+cat(rep("-", 60), "\n")
+
+# Create a test template for new functions
+template_file <- "tests/testthat/template_test.R"
+if (!file.exists(template_file)) {
+  template_content <- '# TEMPLATE FOR WRITING TESTS
+# Copy this file and modify for your specific function tests
+
+# Test naming convention: test_<function_name>.R
+# Test structure: test_that("description", { code })
+
+test_that("function returns correct output type", {
+  skip_if_not_installed("phenop")
+  
+  # ARRANGE: Set up test data
+  test_data <- data.frame(
+    # Create appropriate test data here
+  )
+  
+  # ACT: Call the function
+  result <- your_function(test_data, ...)
+  
+  # ASSERT: Check the results
+  expect_type(result, "list")  # or "double", "character", etc.
+  expect_s3_class(result, "data.frame")  # if it returns a data frame
+  expect_named(result, c("expected", "column", "names"))
+  expect_true(result$success)  # if your functions have a success flag
+})
+
+test_that("function handles edge cases", {
+  skip_if_not_installed("phenop")
+  
+  # Test with empty data
+  expect_error(your_function(data.frame()), "appropriate error message")
+  
+  # Test with missing values
+  test_data <- data.frame(x = c(1, NA, 3))
+  result <- your_function(test_data, na.action = "omit")
+  expect_equal(nrow(result$data), 2)
+})
+
+test_that("function validates inputs", {
+  skip_if_not_installed("phenop")
+  
+  # Test with invalid parameters
+  expect_error(your_function(data.frame(x = 1:3), invalid_param = "wrong"),
+               "Parameter validation failed")
+  
+  # Test with missing required columns
+  expect_error(your_function(data.frame(wrong_col = 1:3)),
+               "Missing required columns")
+})
+
+test_that("function produces consistent results", {
+  skip_if_not_installed("phenop")
+  
+  # Set seed for reproducibility
+  set.seed(123)
+  test_data <- data.frame(
+    x = rnorm(10),
+    y = rnorm(10)
+  )
+  
+  result1 <- your_function(test_data)
+  result2 <- your_function(test_data)
+  
+  # Results should be identical with same seed
+  expect_equal(result1, result2)
+})
+
+test_that("function documentation examples work", {
+  skip_if_not_installed("phenop")
+  
+  # Test the example from the documentation
+  # This ensures the examples in roxygen comments actually work
+  expect_error(
+    # Copy the example code here
+    your_function(mtcars),
+    NA  # Expect no error
+  )
+})
+
+# Helper function for complex test setup
+create_complex_test_data <- function(n = 100) {
+  data.frame(
+    id = 1:n,
+    value = rnorm(n),
+    group = rep(c("A", "B"), length.out = n)
+  )
+}
+
+# Performance test (skip on CRAN)
+test_that("function performance is acceptable", {
+  skip_if_not_installed("phenop")
+  skip_on_cran()  # Skip on CRAN as it may be time-consuming
+  
+  large_data <- create_complex_test_data(10000)
+  
+  execution_time <- system.time({
+    result <- your_function(large_data)
+  })
+  
+  expect_true(execution_time["elapsed"] < 2)  # Should complete in under 2 seconds
+  expect_true(result$success)
+})'
+  
+  writeLines(template_content, template_file)
+  cat("✓ Created tests/testthat/template_test.R\n")
+  cat("  Template for creating new tests\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 8. CREATING SIMPLE TEST UTILITIES
+# ----------------------------------------------------------------------------
+cat("\n8. CREATING SIMPLE TEST UTILITIES\n")
+cat(rep("-", 60), "\n")
+
+# Create a simple test runner script
+test_runner_file <- "run_tests.R"
+if (!file.exists(test_runner_file)) {
+  simple_runner <- '# Simple Test Runner for phenop Package
+# Run this script to execute tests
+
+cat("Running tests for phenop package...\\n")
+
+# Load required packages
+library(testthat)
+library(devtools)
+
+# Load the package
+devtools::load_all()
+
+# Run all tests
+cat("\\nRunning all tests...\\n")
+test_results <- test_dir("tests/testthat")
+
+# Summary
+cat("\\n====================================\\n")
+cat("Test execution completed\\n")
+cat("Total tests run:", sum(sapply(test_results, function(x) x$tests)), "\\n")
+cat("Tests passed:", sum(sapply(test_results, function(x) x$passed)), "\\n")
+cat("Tests failed:", sum(sapply(test_results, function(x) x$failed)), "\\n")'
+  
+  writeLines(simple_runner, test_runner_file)
+  cat("✓ Created simple", test_runner_file, "\n")
+} else {
+  cat("✓", test_runner_file, "already exists\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 9. UPDATE .Rbuildignore
+# ----------------------------------------------------------------------------
+cat("\n9. UPDATING .Rbuildignore\n")
+cat(rep("-", 60), "\n")
+
+# Ensure test-related files that shouldn't be included in the build are ignored
+rbuildignore_file <- ".Rbuildignore"
+if (file.exists(rbuildignore_file)) {
+  rbuildignore <- readLines(rbuildignore_file, warn = FALSE)
+} else {
+  rbuildignore <- character(0)
+}
+
+# Add test-related entries if not already present
+test_ignore_patterns <- c(
+  "^run_tests\\.R$",
+  "^tests/testthat/helpers/$",
+  "^tests/testthat/template_test\\.R$"
+)
+
+for (pattern in test_ignore_patterns) {
+  if (!any(grepl(pattern, rbuildignore))) {
+    rbuildignore <- c(rbuildignore, pattern)
+    cat("Added to .Rbuildignore:", pattern, "\n")
+  }
+}
+
+writeLines(rbuildignore, rbuildignore_file)
+cat("✓ .Rbuildignore updated\n")
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 10. VERIFYING TEST STRUCTURE (VERSIÓN SIMPLE)
+# ----------------------------------------------------------------------------
+cat("\n10. VERIFYING TEST STRUCTURE\n")
+cat(rep("-", 60), "\n")
+
+cat("Checking test directory structure...\n\n")
+
+# Lista de directorios y archivos esperados
+expected_items <- list(
+  dirs = c(
+    "tests",
+    "tests/testthat",
+    "tests/testthat/helpers"
+  ),
+  files = c(
+    "tests/testthat.R",
+    "tests/testthat/setup.R",
+    "tests/testthat/teardown.R",
+    "run_tests.R"
+  )
+)
+
+# Verificar directorios
+cat("DIRECTORIES:\n")
+for (dir in expected_items$dirs) {
+  if (dir.exists(dir)) {
+    cat("  ✓", dir, "\n")
+  } else {
+    cat("  ✗", dir, "(missing)\n")
+  }
+}
+
+# Verificar archivos
+cat("\nFILES:\n")
+for (file in expected_items$files) {
+  if (file.exists(file)) {
+    file_size <- file.size(file)
+    cat(sprintf("  ✓ %-30s (%d bytes)\n", file, file_size))
+  } else {
+    cat("  ✗", file, "(missing)\n")
+  }
+}
+
+# Contar archivos de test
+if (dir.exists("tests/testthat")) {
+  test_files <- list.files("tests/testthat", pattern = "test_.*\\.R$")
+  cat(sprintf("\nTEST FILES: %d found\n", length(test_files)))
+  if (length(test_files) > 0) {
+    for (i in seq_along(test_files)) {
+      cat(sprintf("  %d. %s\n", i, test_files[i]))
+    }
+  }
+} else {
+  cat("\nTEST FILES: tests/testthat directory does not exist\n")
+}
+
+cat("\n✓ Test structure verification complete\n")
+cat("  You can run tests later with:\n")
+cat("    devtools::test()\n")
+cat("    or\n")
+cat("    source('run_tests.R')\n")
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 11. FINAL SUMMARY AND INSTRUCTIONS
+# ----------------------------------------------------------------------------
+cat("\n")
+cat(paste0(rep("=", 60), collapse = ""), "\n")
+cat("TEST STRUCTURE SETUP COMPLETE\n")
+cat(paste0(rep("=", 60), collapse = ""), "\n\n")
+
+cat("SUMMARY OF CREATED FILES:\n")
+cat("1. tests/testthat.R - Main test runner for R CMD check\n")
+cat("2. tests/testthat/setup.R - Setup script (runs before tests)\n")
+cat("3. tests/testthat/teardown.R - Cleanup script (runs after tests)\n")
+cat("4. tests/testthat/test_safe_multidim_plasticity.R - 5 test cases\n")
+cat("5. tests/testthat/test_plasticity_tradeoffs_extended.R - 3 test cases\n")
+cat("6. tests/testthat/test_datasets.R - 3 test cases for demo_data\n")
+cat("7. tests/testthat/template_test.R - Template for new tests\n")
+cat("8. run_tests.R - Interactive test runner\n\n")
+
+cat("HOW TO RUN TESTS:\n")
+cat("1. Run all tests: testthat::test_dir(\"tests/testthat\")\n")
+cat("2. Run specific test: testthat::test_file(\"tests/testthat/test_*.R\")\n")
+cat("3. Run with devtools: devtools::test()\n")
+cat("4. Run interactive: source(\"run_tests.R\")\n")
+cat("5. Check package: devtools::check() (includes tests)\n\n")
+
+cat("HOW TO ADD MORE TESTS:\n")
+cat("1. Copy template_test.R to a new file\n")
+cat("2. Name it test_<function_name>.R\n")
+cat("3. Write test cases using test_that()\n")
+cat("4. Focus on: input validation, edge cases, output structure\n\n")
+
+cat("BEST PRACTICES:\n")
+cat("1. Write tests for each exported function\n")
+cat("2. Test both normal usage and error conditions\n")
+cat("3. Use skip_if_not_installed(\"phenop\") in tests\n")
+cat("4. Use skip_on_cran() for time-consuming tests\n")
+cat("5. Run tests after every significant change\n\n")
+
+cat("NEXT STEPS:\n")
+cat("1. Run: devtools::test() to verify all tests pass\n")
+cat("2. Add tests for your other functions\n")
+cat("3. Consider setting up continuous integration (GitHub Actions)\n")
+cat("4. Run: devtools::check() to ensure package passes all checks\n\n")
+
+cat("For more information, see:\n")
+cat("- testthat package documentation: https://testthat.r-lib.org\n")
+cat("- R Packages book (Testing chapter): https://r-pkgs.org/testing-basics.html\n")
+cat(paste0(rep("=", 60), collapse = ""), "\n")
+```

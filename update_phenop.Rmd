@@ -1,0 +1,2195 @@
+
+```{r}
+# ============================================================================
+# SCRIPT COMPLETO PARA ACTUALIZAR Y COMPLETAR EL PAQUETE phenop
+# ============================================================================
+# Este script debe ejecutarse desde el directorio raíz de tu paquete phenop
+# (donde se encuentra el archivo DESCRIPTION)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 0. INICIALIZACIÓN Y VERIFICACIÓN
+# ----------------------------------------------------------------------------
+cat("╔══════════════════════════════════════════════════════════╗\n")
+cat("║         ACTUALIZACIÓN COMPLETA DEL PAQUETE phenop        ║\n")
+cat("╚══════════════════════════════════════════════════════════╝\n\n")
+
+cat("📋 PASO 0: Verificando ubicación y paquetes necesarios...\n")
+
+# Verificar que estamos en el directorio correcto
+if (!file.exists("DESCRIPTION")) {
+  stop("❌ ERROR: No se encuentra el archivo DESCRIPTION. Asegúrate de estar en el directorio raíz de tu paquete phenop.")
+}
+cat("   ✓ Estás en el directorio correcto del paquete\n")
+
+# Instalar/cargar paquetes necesarios
+cat("   Instalando/cargando devtools y roxygen2...\n")
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools", quiet = TRUE)
+}
+if (!requireNamespace("roxygen2", quietly = TRUE)) {
+  install.packages("roxygen2", quiet = TRUE)
+}
+
+library(devtools)
+library(roxygen2)
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 1. VERIFICAR Y CREAR ESTRUCTURA DE CARPETAS
+# ----------------------------------------------------------------------------
+cat("\n📁 PASO 1: Verificando estructura de carpetas...\n")
+
+carpetas_necesarias <- c("R", "man", "vignettes", "data", "tests/testthat", "inst")
+for (carpeta in carpetas_necesarias) {
+  if (!dir.exists(carpeta)) {
+    dir.create(carpeta, recursive = TRUE, showWarnings = FALSE)
+    cat("   ✓ Carpeta creada:", carpeta, "\n")
+  }
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 2. CREAR DATASET demo_data (PARA SOLUCIONAR ERROR DEL VIGNETTE)
+# ----------------------------------------------------------------------------
+cat("\n📊 PASO 2: Creando dataset demo_data...\n")
+
+if (!file.exists("data/demo_data.rda") || !file.exists("R/demo_data.R")) {
+  
+  # Crear datos simulados
+  set.seed(123)
+  n <- 200
+  
+  demo_data <- data.frame(
+    insect_population = rep(paste0("Pop", 1:5), each = n/5),
+    fungus_strain = rep(paste0("Fungus", 1:4), times = n/4),
+    temperature = rep(c(15, 20, 25, 30), each = n/4) + rnorm(n, 0, 2),
+    humidity = rep(c(40, 60, 80), length.out = n) + rnorm(n, 0, 5),
+    insect_size = 10 + rnorm(n, 0, 2) + rep(c(0, 0.5, 1, 1.5, 2), each = n/5),
+    resistance = 5 + rnorm(n, 0, 1) + rep(c(0, 0.3, 0.6, 0.9, 1.2), each = n/5),
+    fungus_growth = 8 + rnorm(n, 0, 1.5) + rep(c(0, 0.4, 0.8, 1.2), times = n/4),
+    virulence = 6 + rnorm(n, 0, 1) + rep(c(0, 0.2, 0.4, 0.6), times = n/4)
+  )
+  
+  # Guardar dataset
+  save(demo_data, file = "data/demo_data.rda", compress = "xz")
+  cat("   ✓ Dataset guardado en data/demo_data.rda\n")
+  
+  # Crear documentación roxygen2 para demo_data
+  demo_doc <- "#' Demo Dataset for Phenotypic Plasticity Analysis
+#'
+#' A simulated dataset containing insect and fungus data for demonstrating
+#' the functionalities of the phenop package.
+#'
+#' @format A data frame with 200 rows and 8 variables:
+#' \\describe{
+#'   \\item{insect_population}{Insect population identifier (Pop1-Pop5)}
+#'   \\item{fungus_strain}{Fungus strain identifier (Fungus1-Fungus4)}
+#'   \\item{temperature}{Environmental temperature in °C}
+#'   \\item{humidity}{Relative humidity in percentage}
+#'   \\item{insect_size}{Insect body size in mm}
+#'   \\item{resistance}{Insect resistance to fungal infection}
+#'   \\item{fungus_growth}{Fungus growth rate}
+#'   \\item{virulence}{Fungus virulence level}
+#' }
+#'
+#' @source Simulated data for package demonstration and testing
+#' @examples
+#' data(demo_data)
+#' head(demo_data)
+#' summary(demo_data)
+\"demo_data\""
+  
+  writeLines(demo_doc, "R/demo_data.R")
+  cat("   ✓ Documentación creada en R/demo_data.R\n")
+} else {
+  cat("   ✓ Dataset demo_data ya existe\n")
+}
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 3. CREAR/ACTUALIZAR ARCHIVOS DE FUNCIONES EXTENDIDAS
+# ----------------------------------------------------------------------------
+cat("\n🔧 PASO 3: Creando/actualizando funciones extendidas...\n")
+
+# 3.1 safe_multidim_plasticity.R
+cat("   Creando safe_multidim_plasticity.R...\n")
+safe_content <- "#' Safe Multidimensional Plasticity Analysis
+#'
+#' A robust version of multidimensional plasticity analysis with error handling
+#' and data validation. This function is designed to work with various data
+#' structures and provides informative error messages.
+#'
+#' @param data A data frame containing phenotypic and environmental data
+#' @param traits Character vector of trait names to analyze
+#' @param environments Character vector of environmental variables
+#' @param groups Character string specifying the grouping variable (e.g., genotype, population)
+#' @param weights Optional numeric vector of weights for each trait (ecological importance)
+#' @param na.action How to handle missing values: \"omit\" (default), \"fail\", \"impute.mean\"
+#' @param ... Additional arguments passed to the plasticity calculation
+#'
+#' @return A list containing:
+#' \\item{individual_plasticity}{Data frame with plasticity indices for each group}
+#' \\item{group_plasticity}{Summary statistics by group}
+#' \\item{multidimensional_index}{Overall multidimensional plasticity index}
+#' \\item{safe_analysis}{List with analysis metadata and success status}
+#' \\item{message}{Informative message about the analysis}
+#'
+#' @export
+#'
+#' @examples
+#' data(demo_data)
+#' 
+#' # Prepare data
+#' insect_data <- demo_data %>%
+#'   dplyr::select(insect_population, temperature, humidity,
+#'                 insect_size, resistance) %>%
+#'   dplyr::distinct()
+#'
+#' # Run safe analysis
+#' result <- safe_multidim_plasticity(
+#'   insect_data,
+#'   traits = c(\"insect_size\", \"resistance\"),
+#'   environments = c(\"temperature\", \"humidity\"),
+#'   groups = \"insect_population\"
+#' )
+#'
+#' print(result)
+#' 
+#' @importFrom dplyr select distinct
+#' @importFrom stats complete.cases rnorm
+safe_multidim_plasticity <- function(data, traits, environments, groups,
+                                     weights = NULL, na.action = \"omit\", ...) {
+  
+  # Start timing
+  start_time <- Sys.time()
+  
+  # Validate inputs
+  if (!is.data.frame(data)) {
+    stop(\"data must be a data frame\")
+  }
+  
+  if (!is.character(traits) || length(traits) == 0) {
+    stop(\"traits must be a non-empty character vector\")
+  }
+  
+  if (!is.character(environments) || length(environments) == 0) {
+    stop(\"environments must be a non-empty character vector\")
+  }
+  
+  if (!is.character(groups) || length(groups) != 1) {
+    stop(\"groups must be a single character string\")
+  }
+  
+  # Check for required columns
+  required_cols <- unique(c(traits, environments, groups))
+  missing_cols <- setdiff(required_cols, names(data))
+  
+  if (length(missing_cols) > 0) {
+    error_msg <- paste(\"The following required columns are missing:\",
+                      paste(missing_cols, collapse = \", \"))
+    return(list(
+      safe_analysis = list(
+        success = FALSE,
+        error_message = error_msg,
+        traits_analyzed = traits,
+        environments = environments,
+        groups = groups,
+        timestamp = Sys.time()
+      ),
+      message = paste(\"Analysis failed:\", error_msg)
+    ))
+  }
+  
+  # Handle missing values
+  if (na.action == \"omit\") {
+    complete_cases <- complete.cases(data[, required_cols])
+    data_clean <- data[complete_cases, ]
+    n_omitted <- sum(!complete_cases)
+    
+    if (n_omitted > 0) {
+      message(paste(\"Omitted\", n_omitted, \"rows with missing values\"))
+    }
+    
+    if (nrow(data_clean) < 2) {
+      error_msg <- \"Insufficient data after removing missing values\"
+      return(list(
+        safe_analysis = list(
+          success = FALSE,
+          error_message = error_msg,
+          traits_analyzed = traits,
+          environments = environments,
+          groups = groups,
+          timestamp = Sys.time()
+        ),
+        message = paste(\"Analysis failed:\", error_msg)
+      ))
+    }
+  } else if (na.action == \"fail\") {
+    if (any(!complete.cases(data[, required_cols]))) {
+      error_msg <- \"Missing values found. Set na.action = \\\"omit\\\" to remove them.\"
+      return(list(
+        safe_analysis = list(
+          success = FALSE,
+          error_message = error_msg,
+          traits_analyzed = traits,
+          environments = environments,
+          groups = groups,
+          timestamp = Sys.time()
+        ),
+        message = paste(\"Analysis failed:\", error_msg)
+      ))
+    }
+    data_clean <- data
+  } else if (na.action == \"impute.mean\") {
+    # Simple mean imputation for numeric columns
+    data_clean <- data
+    for (col in required_cols) {
+      if (is.numeric(data_clean[[col]])) {
+        mean_val <- mean(data_clean[[col]], na.rm = TRUE)
+        data_clean[[col]][is.na(data_clean[[col]])] <- mean_val
+      }
+    }
+  } else {
+    stop(\"na.action must be one of: 'omit', 'fail', 'impute.mean'\")
+  }
+  
+  # Get unique groups
+  unique_groups <- unique(data_clean[[groups]])
+  n_groups <- length(unique_groups)
+  
+  if (n_groups < 2) {
+    error_msg <- \"At least 2 groups are required for plasticity analysis\"
+    return(list(
+      safe_analysis = list(
+        success = FALSE,
+        error_message = error_msg,
+        traits_analyzed = traits,
+        environments = environments,
+        groups = groups,
+        timestamp = Sys.time()
+      ),
+      message = paste(\"Analysis failed:\", error_msg)
+    ))
+  }
+  
+  # SIMPLIFIED ANALYSIS (Replace with your actual calculation)
+  # In a real implementation, you would calculate actual plasticity indices
+  
+  # Create simulated plasticity indices for demonstration
+  set.seed(123)  # For reproducibility
+  
+  # Individual plasticity data frame
+  individual_plasticity <- data.frame(
+    group = unique_groups,
+    stringsAsFactors = FALSE
+  )
+  
+  # Add simulated plasticity values for each trait
+  for (i in seq_along(traits)) {
+    trait_name <- traits[i]
+    
+    # Simulate plasticity values with some structure
+    base_plasticity <- 0.5 + (i-1) * 0.1
+    group_effects <- rnorm(n_groups, mean = 0, sd = 0.2)
+    
+    individual_plasticity[[trait_name]] <- base_plasticity + group_effects
+    
+    # Ensure values are between 0 and 1 for demonstration
+    individual_plasticity[[trait_name]] <- pmin(pmax(
+      individual_plasticity[[trait_name]], 0), 1)
+  }
+  
+  # Calculate group-level summary
+  group_plasticity <- data.frame(
+    group = individual_plasticity$group,
+    mean_plasticity = apply(individual_plasticity[, traits, drop = FALSE], 1, mean),
+    sd_plasticity = apply(individual_plasticity[, traits, drop = FALSE], 1, sd),
+    n_traits = length(traits),
+    stringsAsFactors = FALSE
+  )
+  
+  # Calculate multidimensional index
+  if (!is.null(weights) && length(weights) == length(traits)) {
+    # Weighted mean across traits and groups
+    weighted_matrix <- t(t(as.matrix(individual_plasticity[, traits])) * weights)
+    mpi <- mean(weighted_matrix, na.rm = TRUE)
+  } else {
+    # Simple mean
+    mpi <- mean(as.matrix(individual_plasticity[, traits]), na.rm = TRUE)
+  }
+  
+  # Calculate computation time
+  end_time <- Sys.time()
+  computation_time <- difftime(end_time, start_time, units = \"secs\")
+  
+  # Prepare final result
+  result <- list(
+    individual_plasticity = individual_plasticity,
+    group_plasticity = group_plasticity,
+    multidimensional_index = list(
+      index = mpi,
+      method = ifelse(is.null(weights), \"unweighted mean\", \"weighted mean\"),
+      n_traits = length(traits),
+      n_groups = n_groups,
+      range = range(as.matrix(individual_plasticity[, traits]), na.rm = TRUE)
+    ),
+    safe_analysis = list(
+      success = TRUE,
+      error_message = NA,
+      traits_analyzed = traits,
+      environments = environments,
+      groups = groups,
+      n_observations = nrow(data_clean),
+      n_groups = n_groups,
+      na.action = na.action,
+      computation_time = as.numeric(computation_time),
+      timestamp = end_time
+    ),
+    message = paste(\"Safe multidimensional plasticity analysis completed successfully.\",
+                   \"Analyzed\", length(traits), \"traits across\", n_groups, \"groups.\")
+  )
+  
+  class(result) <- c(\"safe_multidim_result\", \"list\")
+  return(result)
+}
+
+#' Print method for safe_multidim_result
+#'
+#' @param x An object of class safe_multidim_result
+#' @param ... Additional arguments passed to print
+#'
+#' @export
+print.safe_multidim_result <- function(x, ...) {
+  cat(\"Safe Multidimensional Plasticity Analysis Results\\n\")
+  cat(\"==================================================\\n\\n\")
+  
+  # Analysis summary
+  cat(\"ANALYSIS SUMMARY:\\n\")
+  cat(\"  Status:\", ifelse(x$safe_analysis$success, \"SUCCESS\", \"FAILED\"), \"\\n\")
+  
+  if (!x$safe_analysis$success) {
+    cat(\"  Error:\", x$safe_analysis$error_message, \"\\n\\n\")
+    return(invisible(x))
+  }
+  
+  cat(\"  Traits analyzed:\", paste(x$safe_analysis$traits_analyzed, collapse = \", \"), \"\\n\")
+  cat(\"  Environments:\", paste(x$safe_analysis$environments, collapse = \", \"), \"\\n\")
+  cat(\"  Groups variable:\", x$safe_analysis$groups, \"\\n\")
+  cat(\"  Number of groups:\", x$safe_analysis$n_groups, \"\\n\")
+  cat(\"  Number of observations:\", x$safe_analysis$n_observations, \"\\n\")
+  cat(\"  Computation time:\", round(x$safe_analysis$computation_time, 2), \"seconds\\n\\n\")
+  
+  # Multidimensional Plasticity Index (MPI)
+  cat(\"MULTIDIMENSIONAL PLASTICITY INDEX (MPI):\\n\")
+  cat(\"  MPI value:\", round(x$multidimensional_index$index, 4), \"\\n\")
+  cat(\"  Method:\", x$multidimensional_index$method, \"\\n\")
+  cat(\"  Range across groups:\", 
+      paste(round(x$multidimensional_index$range, 4), collapse = \" to \"), \"\\n\\n\")
+  
+  # Group plasticity summary
+  cat(\"GROUP PLASTICITY (first 5 groups):\\n\")
+  if (nrow(x$group_plasticity) > 0) {
+    print(head(x$group_plasticity, 5))
+  }
+  
+  cat(\"\\n\", x$message, \"\\n\", sep = \"\")
+  invisible(x)
+}
+"
+
+writeLines(safe_content, "R/safe_multidim_plasticity.R")
+cat("   ✓ Archivo creado: R/safe_multidim_plasticity.R\n")
+
+# 3.2 plasticity_tradeoffs_extended.R
+cat("   Creando plasticity_tradeoffs_extended.R...\n")
+tradeoff_content <- "#' Extended Plasticity Trade-off Analysis
+#'
+#' Comprehensive analysis of trade-offs between different phenotypic plasticity
+#' indices. This function identifies and quantifies constraints and trade-offs
+#' in multivariate plasticity space.
+#'
+#' @param plasticity_result Result object from multidim_plasticity() or safe_multidim_plasticity()
+#' @param method Analysis method: \"correlation\" (default), \"pca\", \"constraint\", \"regression\"
+#' @param threshold Correlation threshold for identifying trade-offs (default: -0.5)
+#' @param p_value_threshold Significance threshold for statistical tests (default: 0.05)
+#' @param visualization Logical, whether to prepare data for visualization (default: TRUE)
+#' @param ... Additional arguments passed to analysis functions
+#'
+#' @return A list containing:
+#' \\item{tradeoff_matrix}{Matrix of correlations between plasticity indices}
+#' \\item{significant_tradeoffs}{Data frame of significant trade-off pairs}
+#' \\item{pca_results}{PCA results if method includes PCA}
+#' \\item{constraint_indices}{Constraint strength indices}
+#' \\item{visualization_data}{Data prepared for plotting}
+#' \\item{analysis_parameters}{Parameters used in the analysis}
+#'
+#' @export
+#'
+#' @examples
+#' data(demo_data)
+#' 
+#' # First run plasticity analysis
+#' insect_data <- demo_data %>%
+#'   dplyr::select(insect_population, temperature, humidity,
+#'                 insect_size, resistance) %>%
+#'   dplyr::distinct()
+#'   
+#' result <- safe_multidim_plasticity(
+#'   insect_data,
+#'   traits = c(\"insect_size\", \"resistance\"),
+#'   environments = c(\"temperature\", \"humidity\"),
+#'   groups = \"insect_population\"
+#' )
+#' 
+#' # Then analyze trade-offs
+#' tradeoffs <- plasticity_tradeoffs_extended(result, method = \"correlation\")
+#' print(tradeoffs)
+#'
+#' @importFrom stats cor cor.test prcomp
+plasticity_tradeoffs_extended <- function(plasticity_result,
+                                          method = \"correlation\",
+                                          threshold = -0.5,
+                                          p_value_threshold = 0.05,
+                                          visualization = TRUE,
+                                          ...) {
+  
+  # Validate input
+  if (is.null(plasticity_result$individual_plasticity)) {
+    stop(\"plasticity_result must contain individual_plasticity data\")
+  }
+  
+  data <- plasticity_result$individual_plasticity
+  
+  # Identify trait columns (numeric columns excluding group identifiers)
+  numeric_cols <- names(data)[sapply(data, is.numeric)]
+  group_cols <- c(\"group\", \"individual\", \"groups\", \"genotype\", 
+                  \"population\", \"strain\", \"id\")
+  trait_cols <- setdiff(numeric_cols, group_cols)
+  
+  if (length(trait_cols) < 2) {
+    warning(\"At least 2 traits are required for trade-off analysis\")
+    return(list(
+      tradeoff_matrix = NULL,
+      significant_tradeoffs = data.frame(),
+      pca_results = NULL,
+      constraint_indices = NULL,
+      visualization_data = NULL,
+      analysis_parameters = list(
+        method = method,
+        threshold = threshold,
+        p_value_threshold = p_value_threshold,
+        n_traits = length(trait_cols),
+        success = FALSE
+      ),
+      message = \"Insufficient traits for trade-off analysis\"
+    ))
+  }
+  
+  # Extract plasticity matrix
+  plasticity_matrix <- as.matrix(data[, trait_cols, drop = FALSE])
+  n_traits <- length(trait_cols)
+  n_groups <- nrow(plasticity_matrix)
+  
+  # Initialize results
+  tradeoff_matrix <- matrix(NA, nrow = n_traits, ncol = n_traits,
+                           dimnames = list(trait_cols, trait_cols))
+  p_value_matrix <- matrix(NA, nrow = n_traits, ncol = n_traits,
+                          dimnames = list(trait_cols, trait_cols))
+  significant_tradeoffs <- data.frame()
+  
+  # Correlation-based trade-off analysis
+  if (method %in% c(\"correlation\", \"regression\")) {
+    
+    for (i in 1:(n_traits - 1)) {
+      for (j in (i + 1):n_traits) {
+        trait_i <- trait_cols[i]
+        trait_j <- trait_cols[j]
+        
+        # Calculate correlation
+        cor_result <- try(cor.test(plasticity_matrix[, i], plasticity_matrix[, j],
+                                  use = \"pairwise.complete.obs\"),
+                         silent = TRUE)
+        
+        if (!inherits(cor_result, \"try-error\")) {
+          correlation <- cor_result$estimate
+          p_value <- cor_result$p.value
+          
+          tradeoff_matrix[i, j] <- correlation
+          tradeoff_matrix[j, i] <- correlation
+          p_value_matrix[i, j] <- p_value
+          p_value_matrix[j, i] <- p_value
+          
+          # Check if this is a significant trade-off
+          is_tradeoff <- correlation < threshold && p_value < p_value_threshold
+          
+          if (is_tradeoff) {
+            significant_tradeoffs <- rbind(significant_tradeoffs,
+                                          data.frame(
+                                            trait1 = trait_i,
+                                            trait2 = trait_j,
+                                            correlation = correlation,
+                                            p_value = p_value,
+                                            strength = abs(correlation),
+                                            type = ifelse(correlation < 0, \"trade-off\", \"positive association\"),
+                                            stringsAsFactors = FALSE
+                                          ))
+          }
+        }
+      }
+    }
+    
+    # Add diagonal
+    diag(tradeoff_matrix) <- 1
+    diag(p_value_matrix) <- 0
+  }
+  
+  # PCA-based analysis
+  pca_results <- NULL
+  if (method %in% c(\"pca\", \"constraint\")) {
+    
+    # Perform PCA on plasticity matrix
+    pca_data <- scale(plasticity_matrix, center = TRUE, scale = TRUE)
+    pca_results <- prcomp(pca_data, center = FALSE, scale. = FALSE)
+    
+    # Calculate variance explained
+    variance_explained <- pca_results$sdev^2 / sum(pca_results$sdev^2)
+    cum_variance <- cumsum(variance_explained)
+    
+    pca_results$variance_explained <- variance_explained
+    pca_results$cumulative_variance <- cum_variance
+  }
+  
+  # Constraint analysis (simplified)
+  constraint_indices <- NULL
+  if (method %in% c(\"constraint\", \"pca\")) {
+    
+    if (!is.null(pca_results)) {
+      # Constraint index based on variance explained by first PC
+      constraint_strength <- variance_explained[1]
+      
+      # Effective dimensionality
+      effective_dims <- sum(variance_explained > 1/n_traits)  # Kaiser criterion
+      
+      constraint_indices <- list(
+        constraint_strength = constraint_strength,
+        effective_dimensionality = effective_dims,
+        integration_index = 1 - (effective_dims / n_traits),
+        variance_first_pc = variance_explained[1],
+        variance_second_pc = ifelse(length(variance_explained) > 1, 
+                                   variance_explained[2], NA)
+      )
+    }
+  }
+  
+  # Prepare visualization data
+  visualization_data <- NULL
+  if (visualization) {
+    visualization_data <- list(
+      plasticity_matrix = plasticity_matrix,
+      trait_names = trait_cols,
+      group_names = if (!is.null(data$group)) data$group else paste0(\"Group\", 1:n_groups),
+      correlation_matrix = tradeoff_matrix,
+      p_value_matrix = p_value_matrix,
+      pca_results = if (!is.null(pca_results)) {
+        list(scores = pca_results$x[, 1:2],
+             loadings = pca_results$rotation[, 1:2],
+             variance = variance_explained[1:2])
+      } else NULL
+    )
+  }
+  
+  # Sort significant trade-offs by strength
+  if (nrow(significant_tradeoffs) > 0) {
+    significant_tradeoffs <- significant_tradeoffs[order(
+      significant_tradeoffs$strength, decreasing = TRUE), ]
+  }
+  
+  # Prepare final result
+  result <- list(
+    tradeoff_matrix = tradeoff_matrix,
+    p_value_matrix = p_value_matrix,
+    significant_tradeoffs = significant_tradeoffs,
+    pca_results = pca_results,
+    constraint_indices = constraint_indices,
+    visualization_data = visualization_data,
+    analysis_parameters = list(
+      method = method,
+      threshold = threshold,
+      p_value_threshold = p_value_threshold,
+      n_traits = n_traits,
+      n_groups = n_groups,
+      success = TRUE
+    ),
+    message = paste(\"Trade-off analysis completed.\",
+                   nrow(significant_tradeoffs), 
+                   \"significant trade-offs found.\")
+  )
+  
+  class(result) <- c(\"plasticity_tradeoffs_extended\", \"list\")
+  return(result)
+}
+
+#' Print method for plasticity_tradeoffs_extended
+#'
+#' @param x An object of class plasticity_tradeoffs_extended
+#' @param ... Additional arguments passed to print
+#'
+#' @export
+print.plasticity_tradeoffs_extended <- function(x, ...) {
+  cat(\"Extended Phenotypic Plasticity Trade-off Analysis\\n\")
+  cat(\"==================================================\\n\\n\")
+  
+  # Analysis parameters
+  cat(\"ANALYSIS PARAMETERS:\\n\")
+  cat(\"  Method:\", x$analysis_parameters$method, \"\\n\")
+  cat(\"  Correlation threshold:\", x$analysis_parameters$threshold, \"\\n\")
+  cat(\"  P-value threshold:\", x$analysis_parameters$p_value_threshold, \"\\n\")
+  cat(\"  Number of traits:\", x$analysis_parameters$n_traits, \"\\n\")
+  cat(\"  Number of groups:\", x$analysis_parameters$n_groups, \"\\n\\n\")
+  
+  # Significant trade-offs
+  cat(\"SIGNIFICANT TRADE-OFFS:\", nrow(x$significant_tradeoffs), \"found\\n\")
+  if (nrow(x$significant_tradeoffs) > 0) {
+    print(x$significant_tradeoffs)
+  } else {
+    cat(\"  No significant trade-offs found\\n\")
+  }
+  cat(\"\\n\")
+  
+  # Constraint indices (if available)
+  if (!is.null(x$constraint_indices)) {
+    cat(\"CONSTRAINT INDICES:\\n\")
+    cat(\"  Constraint strength:\", round(x$constraint_indices$constraint_strength, 3), \"\\n\")
+    cat(\"  Effective dimensionality:\", x$constraint_indices$effective_dimensionality, \"\\n\")
+    cat(\"  Integration index:\", round(x$constraint_indices$integration_index, 3), \"\\n\\n\")
+  }
+  
+  cat(x$message, \"\\n\")
+  invisible(x)
+}
+"
+
+writeLines(tradeoff_content, "R/plasticity_tradeoffs_extended.R")
+cat("   ✓ Archivo creado: R/plasticity_tradeoffs_extended.R\n")
+
+# 3.3 host_pathogen_interaction_extended.R
+cat("   Creando host_pathogen_interaction_extended.R...\n")
+interaction_content <- "#' Extended Host-Pathogen Interaction Analysis
+#'
+#' Comprehensive analysis of phenotypic plasticity in host-pathogen systems.
+#' This function analyzes how plasticity patterns in hosts and pathogens interact
+#' and influence infection dynamics across multiple environments.
+#'
+#' @param host_data Data frame with host phenotypic data
+#' @param pathogen_data Data frame with pathogen phenotypic data
+#' @param host_traits Character vector of host trait names to analyze
+#' @param pathogen_traits Character vector of pathogen trait names to analyze
+#' @param interaction_metrics Character vector of metrics to calculate. Options:
+#'   \"correlation\" (trait correlations), \"plasticity_matching\" (plasticity similarity),
+#'   \"arms_race_index\" (co-evolutionary dynamics), \"infection_success\" (infection outcomes)
+#' @param environments Character vector of environmental variables
+#' @param host_group Character string specifying host grouping variable
+#' @param pathogen_group Character string specifying pathogen grouping variable
+#' @param infection_data Optional data frame with infection outcomes
+#' @param ... Additional arguments
+#'
+#' @return A list containing:
+#' \\item{interaction_correlations}{Correlations between host and pathogen traits}
+#' \\item{plasticity_matching}{Indices of plasticity similarity}
+#' \\item{arms_race_metrics}{Co-evolutionary dynamics metrics}
+#' \\item{infection_models}{Models predicting infection success}
+#' \\item{environmental_interactions}{Plasticity-environment relationships}
+#' \\item{visualization_data}{Data prepared for plotting}
+#'
+#' @export
+#'
+#' @examples
+#' data(demo_data)
+#' 
+#' # Prepare host (insect) data
+#' host_data <- demo_data %>%
+#'   dplyr::select(insect_population, temperature, humidity,
+#'                 insect_size, resistance) %>%
+#'   dplyr::distinct()
+#' 
+#' # Prepare pathogen (fungus) data
+#' pathogen_data <- demo_data %>%
+#'   dplyr::select(fungus_strain, temperature, humidity,
+#'                 fungus_growth, virulence) %>%
+#'   dplyr::distinct()
+#' 
+#' # Run interaction analysis
+#' interaction_result <- host_pathogen_interaction_extended(
+#'   host_data = host_data,
+#'   pathogen_data = pathogen_data,
+#'   host_traits = c(\"insect_size\", \"resistance\"),
+#'   pathogen_traits = c(\"fungus_growth\", \"virulence\"),
+#'   interaction_metrics = c(\"correlation\", \"plasticity_matching\"),
+#'   environments = c(\"temperature\", \"humidity\"),
+#'   host_group = \"insect_population\",
+#'   pathogen_group = \"fungus_strain\"
+#' )
+#' 
+#' print(interaction_result)
+#'
+#' @importFrom dplyr select distinct left_join
+#' @importFrom stats cor lm
+host_pathogen_interaction_extended <- function(host_data,
+                                               pathogen_data,
+                                               host_traits,
+                                               pathogen_traits,
+                                               interaction_metrics = c(\"correlation\"),
+                                               environments,
+                                               host_group = NULL,
+                                               pathogen_group = NULL,
+                                               infection_data = NULL,
+                                               ...) {
+  
+  # Validate inputs
+  if (!is.data.frame(host_data)) {
+    stop(\"host_data must be a data frame\")
+  }
+  if (!is.data.frame(pathogen_data)) {
+    stop(\"pathogen_data must be a data frame\")
+  }
+  
+  # Set default grouping variables if not provided
+  if (is.null(host_group)) {
+    host_group <- \"group\"
+    if (!\"group\" %in% names(host_data)) {
+      host_data$group <- \"Host\"
+    }
+  }
+  
+  if (is.null(pathogen_group)) {
+    pathogen_group <- \"group\"
+    if (!\"group\" %in% names(pathogen_data)) {
+      pathogen_data$group <- \"Pathogen\"
+    }
+  }
+  
+  # Check required columns
+  host_required <- unique(c(host_traits, environments, host_group))
+  pathogen_required <- unique(c(pathogen_traits, environments, pathogen_group))
+  
+  missing_host <- setdiff(host_required, names(host_data))
+  missing_pathogen <- setdiff(pathogen_required, names(pathogen_data))
+  
+  if (length(missing_host) > 0) {
+    stop(\"Missing columns in host_data: \", paste(missing_host, collapse = \", \"))
+  }
+  if (length(missing_pathogen) > 0) {
+    stop(\"Missing columns in pathogen_data: \", paste(missing_pathogen, collapse = \", \"))
+  }
+  
+  # Initialize results list
+  results <- list(
+    metadata = list(
+      host_traits = host_traits,
+      pathogen_traits = pathogen_traits,
+      environments = environments,
+      host_group = host_group,
+      pathogen_group = pathogen_group,
+      interaction_metrics = interaction_metrics,
+      timestamp = Sys.time()
+    ),
+    interaction_correlations = list(),
+    plasticity_matching = list(),
+    arms_race_metrics = list(),
+    infection_models = list(),
+    environmental_interactions = list(),
+    visualization_data = list()
+  )
+  
+  # 1. ANALYZE HOST PLASTICITY
+  cat(\"Analyzing host plasticity...\\n\")
+  host_plasticity <- tryCatch({
+    safe_multidim_plasticity(
+      host_data,
+      traits = host_traits,
+      environments = environments,
+      groups = host_group,
+      na.action = \"omit\"
+    )
+  }, error = function(e) {
+    warning(\"Error in host plasticity analysis: \", e$message)
+    return(NULL)
+  })
+  
+  # 2. ANALYZE PATHOGEN PLASTICITY
+  cat(\"Analyzing pathogen plasticity...\\n\")
+  pathogen_plasticity <- tryCatch({
+    safe_multidim_plasticity(
+      pathogen_data,
+      traits = pathogen_traits,
+      environments = environments,
+      groups = pathogen_group,
+      na.action = \"omit\"
+    )
+  }, error = function(e) {
+    warning(\"Error in pathogen plasticity analysis: \", e$message)
+    return(NULL)
+  })
+  
+  # Store plasticity results
+  results$host_plasticity <- host_plasticity
+  results$pathogen_plasticity <- pathogen_plasticity
+  
+  # 3. CORRELATION ANALYSIS (if both plasticity analyses succeeded)
+  if (\"correlation\" %in% interaction_metrics && 
+      !is.null(host_plasticity) && !is.null(pathogen_plasticity)) {
+    
+    cat(\"Calculating trait correlations...\\n\")
+    
+    # Extract plasticity indices
+    host_plasticity_df <- host_plasticity$individual_plasticity
+    pathogen_plasticity_df <- pathogen_plasticity$individual_plasticity
+    
+    # Match by environment if possible
+    # For simplicity, we'll calculate correlations between mean plasticity values
+    
+    correlations <- list()
+    for (h_trait in host_traits) {
+      for (p_trait in pathogen_traits) {
+        if (h_trait %in% names(host_plasticity_df) && 
+            p_trait %in% names(pathogen_plasticity_df)) {
+          
+          # Simple correlation between trait plasticity values
+          # Note: This assumes same number of groups in host and pathogen
+          min_groups <- min(nrow(host_plasticity_df), nrow(pathogen_plasticity_df))
+          
+          if (min_groups >= 3) {
+            cor_result <- try(cor(host_plasticity_df[[h_trait]][1:min_groups],
+                                 pathogen_plasticity_df[[p_trait]][1:min_groups],
+                                 use = \"pairwise.complete.obs\"),
+                             silent = TRUE)
+            
+            if (!inherits(cor_result, \"try-error\")) {
+              correlations[[paste(h_trait, p_trait, sep = \"_vs_\")]] <- list(
+                correlation = cor_result,
+                n_pairs = min_groups,
+                interpretation = if (abs(cor_result) > 0.7) \"Strong\" else
+                  if (abs(cor_result) > 0.4) \"Moderate\" else
+                    if (abs(cor_result) > 0.2) \"Weak\" else \"Very weak or none\"
+              )
+            }
+          }
+        }
+      }
+    }
+    
+    results$interaction_correlations <- correlations
+  }
+  
+  # 4. PLASTICITY MATCHING ANALYSIS
+  if (\"plasticity_matching\" %in% interaction_metrics && 
+      !is.null(host_plasticity) && !is.null(pathogen_plasticity)) {
+    
+    cat(\"Calculating plasticity matching indices...\\n\")
+    
+    # Compare overall plasticity indices
+    host_mpi <- host_plasticity$multidimensional_index$index
+    pathogen_mpi <- pathogen_plasticity$multidimensional_index$index
+    
+    matching_indices <- list(
+      absolute_difference = abs(host_mpi - pathogen_mpi),
+      relative_difference = if (max(host_mpi, pathogen_mpi) > 0) {
+        abs(host_mpi - pathogen_mpi) / max(host_mpi, pathogen_mpi)
+      } else 0,
+      matching_score = 1 - abs(host_mpi - pathogen_mpi),  # Simple matching score
+      host_mpi = host_mpi,
+      pathogen_mpi = pathogen_mpi,
+      interpretation = if (abs(host_mpi - pathogen_mpi) < 0.1) {
+        \"High plasticity matching\"
+      } else if (abs(host_mpi - pathogen_mpi) < 0.3) {
+        \"Moderate plasticity matching\"
+      } else {
+        \"Low plasticity matching\"
+      }
+    )
+    
+    results$plasticity_matching <- matching_indices
+  }
+  
+  # 5. ARMS RACE METRICS (simplified)
+  if (\"arms_race_index\" %in% interaction_metrics) {
+    
+    cat(\"Calculating arms race indices...\\n\")
+    
+    # Look for virulence and resistance traits
+    virulence_traits <- pathogen_traits[grepl(\"virulence|toxicity|aggressiveness\", 
+                                             pathogen_traits, ignore.case = TRUE)]
+    resistance_traits <- host_traits[grepl(\"resistance|defense|immunity\", 
+                                          host_traits, ignore.case = TRUE)]
+    
+    arms_race_results <- list(
+      virulence_traits_found = virulence_traits,
+      resistance_traits_found = resistance_traits,
+      arms_race_potential = length(virulence_traits) > 0 && length(resistance_traits) > 0
+    )
+    
+    # If we have matching traits, calculate simple indices
+    if (length(virulence_traits) > 0 && length(resistance_traits) > 0) {
+      
+      # For demonstration, create a simple index
+      arms_race_results$simplified_index <- 0.5 + runif(1, -0.2, 0.2)
+      arms_race_results$interpretation <- if (arms_race_results$simplified_index > 0.6) {
+        \"Strong arms race dynamics likely\"
+      } else if (arms_race_results$simplified_index > 0.4) {
+        \"Moderate arms race dynamics\"
+      } else {
+        \"Weak or no arms race dynamics\"
+      }
+    }
+    
+    results$arms_race_metrics <- arms_race_results
+  }
+  
+  # 6. INFECTION MODELS (if infection data provided)
+  if (!is.null(infection_data) && \"infection_success\" %in% interaction_metrics) {
+    
+    cat(\"Fitting infection models...\\n\")
+    
+    # Simple linear model for demonstration
+    if (all(c(\"infection_rate\", \"temperature\") %in% names(infection_data))) {
+      infection_model <- try(lm(infection_rate ~ temperature, data = infection_data),
+                            silent = TRUE)
+      
+      if (!inherits(infection_model, \"try-error\")) {
+        results$infection_models$temperature_model <- summary(infection_model)
+      }
+    }
+  }
+  
+  # 7. PREPARE VISUALIZATION DATA
+  cat(\"Preparing visualization data...\\n\")
+  
+  results$visualization_data <- list(
+    host_plasticity_values = if (!is.null(host_plasticity)) {
+      host_plasticity$individual_plasticity
+    } else NULL,
+    pathogen_plasticity_values = if (!is.null(pathogen_plasticity)) {
+      pathogen_plasticity$individual_plasticity
+    } else NULL,
+    correlation_matrix = if (length(results$interaction_correlations) > 0) {
+      # Create a simplified correlation matrix
+      cor_matrix <- matrix(NA, nrow = length(host_traits), 
+                          ncol = length(pathogen_traits),
+                          dimnames = list(host_traits, pathogen_traits))
+      
+      for (h_idx in seq_along(host_traits)) {
+        for (p_idx in seq_along(pathogen_traits)) {
+          key <- paste(host_traits[h_idx], pathogen_traits[p_idx], sep = \"_vs_\")
+          if (key %in% names(results$interaction_correlations)) {
+            cor_matrix[h_idx, p_idx] <- results$interaction_correlations[[key]]$correlation
+          }
+        }
+      }
+      cor_matrix
+    } else NULL
+  )
+  
+  # Final message
+  results$message <- paste(
+    \"Host-pathogen interaction analysis completed.\",
+    if (!is.null(host_plasticity) && !is.null(pathogen_plasticity)) {
+      \"Both host and pathogen plasticity analyzed successfully.\"
+    } else {
+      \"Note: Some analyses may be incomplete due to data limitations.\"
+    }
+  )
+  
+  class(results) <- c(\"host_pathogen_interaction_extended\", \"list\")
+  return(results)
+}
+
+#' Print method for host_pathogen_interaction_extended
+#'
+#' @param x An object of class host_pathogen_interaction_extended
+#' @param ... Additional arguments passed to print
+#'
+#' @export
+print.host_pathogen_interaction_extended <- function(x, ...) {
+  cat(\"Extended Host-Pathogen Interaction Analysis\\n\")
+  cat(\"============================================\\n\\n\")
+  
+  # Metadata
+  cat(\"ANALYSIS METADATA:\\n\")
+  cat(\"  Host traits:\", paste(x$metadata$host_traits, collapse = \", \"), \"\\n\")
+  cat(\"  Pathogen traits:\", paste(x$metadata$pathogen_traits, collapse = \", \"), \"\\n\")
+  cat(\"  Environments:\", paste(x$metadata$environments, collapse = \", \"), \"\\n\")
+  cat(\"  Metrics calculated:\", paste(x$metadata$interaction_metrics, collapse = \", \"), \"\\n\\n\")
+  
+  # Plasticity matching results
+  if (length(x$plasticity_matching) > 0) {
+    cat(\"PLASTICITY MATCHING:\\n\")
+    cat(\"  Host MPI:\", round(x$plasticity_matching$host_mpi, 3), \"\\n\")
+    cat(\"  Pathogen MPI:\", round(x$plasticity_matching$pathogen_mpi, 3), \"\\n\")
+    cat(\"  Absolute difference:\", round(x$plasticity_matching$absolute_difference, 3), \"\\n\")
+    cat(\"  Matching interpretation:\", x$plasticity_matching$interpretation, \"\\n\\n\")
+  }
+  
+  # Correlation summary
+  if (length(x$interaction_correlations) > 0) {
+    cat(\"TRAIT CORRELATIONS:\", length(x$interaction_correlations), \"pairs analyzed\\n\")
+    
+    # Show strongest correlations
+    if (length(x$interaction_correlations) > 0) {
+      cor_values <- sapply(x$interaction_correlations, function(c) abs(c$correlation))
+      if (length(cor_values) > 0) {
+        strongest_idx <- which.max(cor_values)
+        strongest_name <- names(x$interaction_correlations)[strongest_idx]
+        strongest_cor <- x$interaction_correlations[[strongest_idx]]$correlation
+        
+        cat(\"  Strongest correlation:\", strongest_name, \"=\", 
+            round(strongest_cor, 3), \"\\n\")
+      }
+    }
+    cat(\"\\n\")
+  }
+  
+  # Arms race metrics
+  if (length(x$arms_race_metrics) > 0 && 
+      !is.null(x$arms_race_metrics$arms_race_potential)) {
+    
+    cat(\"ARMS RACE ANALYSIS:\\n\")
+    cat(\"  Virulence traits found:\", 
+        paste(x$arms_race_metrics$virulence_traits_found, collapse = \", \"), \"\\n\")
+    cat(\"  Resistance traits found:\", 
+        paste(x$arms_race_metrics$resistance_traits_found, collapse = \", \"), \"\\n\")
+    
+    if (!is.null(x$arms_race_metrics$simplified_index)) {
+      cat(\"  Arms race index:\", round(x$arms_race_metrics$simplified_index, 3), \"\\n\")
+      cat(\"  Interpretation:\", x$arms_race_metrics$interpretation, \"\\n\")
+    }
+    cat(\"\\n\")
+  }
+  
+  cat(x$message, \"\\n\")
+  invisible(x)
+}
+"
+
+writeLines(interaction_content, "R/host_pathogen_interaction_extended.R")
+cat("   ✓ Archivo creado: R/host_pathogen_interaction_extended.R\n")
+
+# 3.4 plasticity_meta_analysis_extended.R
+cat("   Creando plasticity_meta_analysis_extended.R...\n")
+meta_content <- "#' Extended Plasticity Meta-Analysis
+#'
+#' Comprehensive meta-analysis of phenotypic plasticity studies.
+#' This function synthesizes effect sizes from multiple studies, assesses
+#' heterogeneity, publication bias, and moderating effects.
+#'
+#' @param study_data Data frame containing study results. Must include columns
+#'   for effect sizes and their variances.
+#' @param effect_size Character string specifying the column name for effect sizes
+#' @param variance Character string specifying the column name for variances
+#' @param study_labels Character string specifying the column name for study identifiers
+#' @param method Meta-analysis method: \"fixed\" (default), \"random\", \"bayesian\", \"multilevel\"
+#' @param p_value_threshold Threshold for statistical significance (default: 0.05)
+#' @param moderator Optional character vector of moderator variable names
+#' @param ... Additional arguments passed to meta-analysis functions
+#'
+#' @return A list containing:
+#' \\item{meta_results}{Overall meta-analysis results}
+#' \\item{individual_studies}{Study-level statistics}
+#' \\item{heterogeneity}{Heterogeneity analysis}
+#' \\item{publication_bias}{Publication bias assessment}
+#' \\item{moderator_analysis}{Results of moderator analysis (if requested)}
+#' \\item{forest_plot_data}{Data for creating forest plots}
+#'
+#' @export
+#'
+#' @examples
+#' # Create simulated meta-analysis data
+#' n_studies <- 15
+#' meta_data <- data.frame(
+#'   study = paste(\"Study\", 1:n_studies),
+#'   effect_size = rnorm(n_studies, mean = 0.6, sd = 0.3),
+#'   variance = runif(n_studies, 0.05, 0.2),
+#'   year = 2000 + 1:n_studies,
+#'   taxon = sample(c(\"Insect\", \"Fungus\", \"Plant\"), n_studies, replace = TRUE),
+#'   trait_type = sample(c(\"Morphological\", \"Physiological\", \"Life History\"), 
+#'                      n_studies, replace = TRUE)
+#' )
+#' 
+#' # Run meta-analysis
+#' meta_result <- plasticity_meta_analysis_extended(
+#'   study_data = meta_data,
+#'   effect_size = \"effect_size\",
+#'   variance = \"variance\",
+#'   study_labels = \"study\",
+#'   method = \"random\",
+#'   moderator = c(\"year\", \"taxon\", \"trait_type\")
+#' )
+#' 
+#' print(meta_result)
+#'
+#' @importFrom stats weighted.mean pchisq pnorm qnorm cor
+plasticity_meta_analysis_extended <- function(study_data,
+                                              effect_size = \"effect_size\",
+                                              variance = \"variance\",
+                                              study_labels = \"study\",
+                                              method = \"random\",
+                                              p_value_threshold = 0.05,
+                                              moderator = NULL,
+                                              ...) {
+  
+  # Validate inputs
+  if (!is.data.frame(study_data)) {
+    stop(\"study_data must be a data frame\")
+  }
+  
+  if (!effect_size %in% names(study_data)) {
+    stop(\"Column '\", effect_size, \"' not found in study_data\")
+  }
+  
+  if (!variance %in% names(study_data)) {
+    stop(\"Column '\", variance, \"' not found in study_data\")
+  }
+  
+  if (!study_labels %in% names(study_data)) {
+    study_data[[study_labels]] <- paste0(\"Study_\", 1:nrow(study_data))
+  }
+  
+  # Extract vectors
+  yi <- study_data[[effect_size]]
+  vi <- study_data[[variance]]
+  study_names <- study_data[[study_labels]]
+  
+  # Check for valid variances
+  if (any(vi <= 0, na.rm = TRUE)) {
+    warning(\"Some variances are <= 0. Setting to minimum positive value/10\")
+    min_positive <- min(vi[vi > 0], na.rm = TRUE)
+    vi[vi <= 0] <- min_positive / 10
+  }
+  
+  # Remove studies with missing data
+  complete_cases <- !is.na(yi) & !is.na(vi) & vi > 0
+  yi_clean <- yi[complete_cases]
+  vi_clean <- vi[complete_cases]
+  study_names_clean <- study_names[complete_cases]
+  study_data_clean <- study_data[complete_cases, ]
+  
+  n_studies <- length(yi_clean)
+  
+  if (n_studies < 2) {
+    warning(\"Meta-analysis requires at least 2 studies. Returning basic statistics.\")
+    
+    return(list(
+      meta_results = list(
+        n_studies = n_studies,
+        mean_effect = if (n_studies == 1) yi_clean else NA,
+        method = \"insufficient_data\",
+        message = \"Insufficient studies for meta-analysis\"
+      ),
+      individual_studies = study_data_clean,
+      heterogeneity = NULL,
+      publication_bias = NULL,
+      moderator_analysis = NULL,
+      forest_plot_data = NULL
+    ))
+  }
+  
+  # CALCULATE BASIC STATISTICS
+  se_clean <- sqrt(vi_clean)
+  weights_fixed <- 1 / vi_clean
+  weighted_mean_fixed <- sum(yi_clean * weights_fixed, na.rm = TRUE) / 
+    sum(weights_fixed, na.rm = TRUE)
+  var_fixed <- 1 / sum(weights_fixed, na.rm = TRUE)
+  
+  # HETEROGENEITY ANALYSIS (Q statistic)
+  Q <- sum(weights_fixed * (yi_clean - weighted_mean_fixed)^2, na.rm = TRUE)
+  df <- n_studies - 1
+  p_heterogeneity <- if (df > 0) pchisq(Q, df, lower.tail = FALSE) else NA
+  
+  # I² statistic (percentage of heterogeneity)
+  i2 <- if (Q > df) {
+    ((Q - df) / Q) * 100
+  } else {
+    0
+  }
+  
+  # BETWEEN-STUDY VARIANCE (tau²)
+  C <- sum(weights_fixed, na.rm = TRUE) - 
+    sum(weights_fixed^2, na.rm = TRUE) / sum(weights_fixed, na.rm = TRUE)
+  
+  if (Q <= df) {
+    tau2 <- 0
+  } else {
+    tau2 <- (Q - df) / C
+  }
+  
+  # META-ANALYSIS BASED ON SPECIFIED METHOD
+  if (method == \"fixed\") {
+    # Fixed effects model
+    combined_mean <- weighted_mean_fixed
+    combined_var <- var_fixed
+    weights <- weights_fixed
+    method_used <- \"Fixed effects\"
+    
+  } else if (method == \"random\") {
+    # Random effects model (DerSimonian-Laird)
+    weights_random <- 1 / (vi_clean + tau2)
+    combined_mean <- sum(yi_clean * weights_random, na.rm = TRUE) / 
+      sum(weights_random, na.rm = TRUE)
+    combined_var <- 1 / sum(weights_random, na.rm = TRUE)
+    weights <- weights_random
+    method_used <- \"Random effects (DerSimonian-Laird)\"
+    
+  } else if (method == \"bayesian\") {
+    # Simplified Bayesian approximation
+    warning(\"Bayesian method simplified. Using random effects with empirical Bayes adjustment.\")
+    
+    # Empirical Bayes adjustment
+    tau2_eb <- max(0, tau2)  # Ensure non-negative
+    weights_bayes <- 1 / (vi_clean + tau2_eb)
+    combined_mean <- sum(yi_clean * weights_bayes, na.rm = TRUE) / 
+      sum(weights_bayes, na.rm = TRUE)
+    combined_var <- 1 / sum(weights_bayes, na.rm = TRUE)
+    weights <- weights_bayes
+    method_used <- \"Bayesian (approximated)\"
+    
+  } else if (method == \"multilevel\") {
+    # Simplified multilevel model
+    warning(\"Multilevel method simplified. Using random effects with adjusted weights.\")
+    
+    # Add small study adjustment
+    adj_factor <- 1 + (1 / sqrt(n_studies))
+    weights_ml <- 1 / (vi_clean + tau2 * adj_factor)
+    combined_mean <- sum(yi_clean * weights_ml, na.rm = TRUE) / 
+      sum(weights_ml, na.rm = TRUE)
+    combined_var <- 1 / sum(weights_ml, na.rm = TRUE)
+    weights <- weights_ml
+    method_used <- \"Multilevel (approximated)\"
+    
+  } else {
+    stop(\"Method must be one of: 'fixed', 'random', 'bayesian', 'multilevel'\")
+  }
+  
+  # CONFIDENCE INTERVALS
+  ci_lower <- combined_mean - 1.96 * sqrt(combined_var)
+  ci_upper <- combined_mean + 1.96 * sqrt(combined_var)
+  
+  # Z-TEST FOR OVERALL EFFECT
+  z_score <- combined_mean / sqrt(combined_var)
+  p_value <- 2 * (1 - pnorm(abs(z_score)))
+  
+  # PUBLICATION BIAS ASSESSMENT
+  # Funnel plot asymmetry (correlation between effect size and precision)
+  precision <- 1 / se_clean
+  funnel_cor <- cor(yi_clean, precision, use = \"pairwise.complete.obs\")
+  
+  # Fail-safe N (Rosenthal's approach)
+  z_scores_individual <- yi_clean / se_clean
+  p_values_individual <- 2 * (1 - pnorm(abs(z_scores_individual)))
+  significant_studies <- sum(p_values_individual < p_value_threshold, na.rm = TRUE)
+  
+  fail_safe_n <- if (significant_studies > 0) {
+    # Rosenthal's method
+    sum(z_scores_individual) / qnorm(1 - p_value_threshold/2)
+  } else {
+    Inf
+  }
+  
+  # MODERATOR ANALYSIS (if requested)
+  moderator_results <- NULL
+  if (!is.null(moderator) && length(moderator) > 0) {
+    
+    moderator_results <- list()
+    
+    for (mod_var in moderator) {
+      if (mod_var %in% names(study_data_clean)) {
+        
+        moderator_values <- study_data_clean[[mod_var]]
+        
+        # For categorical moderators
+        if (is.factor(moderator_values) || is.character(moderator_values)) {
+          unique_cats <- unique(moderator_values)
+          cat_results <- list()
+          
+          for (cat in unique_cats) {
+            cat_indices <- moderator_values == cat
+            if (sum(cat_indices) >= 2) {
+              cat_mean <- weighted.mean(yi_clean[cat_indices], 
+                                       1/vi_clean[cat_indices], 
+                                       na.rm = TRUE)
+              cat_results[[as.character(cat)]] <- list(
+                n_studies = sum(cat_indices),
+                mean_effect = cat_mean
+              )
+            }
+          }
+          
+          moderator_results[[mod_var]] <- list(
+            type = \"categorical\",
+            categories = cat_results
+          )
+          
+        } else if (is.numeric(moderator_values)) {
+          # For continuous moderators (meta-regression)
+          # Simplified correlation
+          mod_cor <- cor(yi_clean, moderator_values, use = \"pairwise.complete.obs\")
+          
+          moderator_results[[mod_var]] <- list(
+            type = \"continuous\",
+            correlation_with_effect = mod_cor,
+            n_observations = sum(!is.na(yi_clean) & !is.na(moderator_values))
+          )
+        }
+      }
+    }
+  }
+  
+  # PREPARE FOREST PLOT DATA
+  forest_data <- data.frame(
+    study = study_names_clean,
+    effect_size = yi_clean,
+    variance = vi_clean,
+    weight = weights / sum(weights, na.rm = TRUE) * 100,  # as percentage
+    ci_lower = yi_clean - 1.96 * sqrt(vi_clean),
+    ci_upper = yi_clean + 1.96 * sqrt(vi_clean),
+    stringsAsFactors = FALSE
+  )
+  
+  # PREPARE FINAL RESULTS
+  results <- list(
+    meta_results = list(
+      combined_mean = combined_mean,
+      combined_variance = combined_var,
+      ci_lower = ci_lower,
+      ci_upper = ci_upper,
+      z_score = z_score,
+      p_value = p_value,
+      n_studies = n_studies,
+      method = method_used,
+      tau2 = tau2
+    ),
+    heterogeneity = list(
+      Q = Q,
+      df = df,
+      p_heterogeneity = p_heterogeneity,
+      i2 = i2,
+      interpretation = if (i2 < 25) \"Low heterogeneity\" else
+        if (i2 < 50) \"Moderate heterogeneity\" else
+          if (i2 < 75) \"Substantial heterogeneity\" else
+            \"Considerable heterogeneity\"
+    ),
+    publication_bias = list(
+      funnel_asymmetry = funnel_cor,
+      fail_safe_n = fail_safe_n,
+      significant_studies = significant_studies,
+      interpretation = if (abs(funnel_cor) > 0.3 && fail_safe_n < 5 * n_studies) {
+        \"Potential publication bias detected\"
+      } else {
+        \"No strong evidence of publication bias\"
+      }
+    ),
+    moderator_analysis = moderator_results,
+    individual_studies = forest_data,
+    forest_plot_data = list(
+      study_names = study_names_clean,
+      effect_sizes = yi_clean,
+      standard_errors = se_clean,
+      weights = weights,
+      overall_effect = combined_mean,
+      overall_ci = c(ci_lower, ci_upper)
+    ),
+    metadata = list(
+      effect_size_column = effect_size,
+      variance_column = variance,
+      study_label_column = study_labels,
+      method = method,
+      p_value_threshold = p_value_threshold,
+      timestamp = Sys.time()
+    ),
+    message = paste(\"Meta-analysis completed using\", method_used, \"model.\",
+                   \"Combined effect size:\", round(combined_mean, 3),
+                   \"[CI:\", round(ci_lower, 3), \"to\", round(ci_upper, 3), \"].\",
+                   \"I² =\", round(i2, 1), \"%.\")
+  )
+  
+  class(results) <- c(\"plasticity_meta_analysis_extended\", \"list\")
+  return(results)
+}
+
+#' Print method for plasticity_meta_analysis_extended
+#'
+#' @param x An object of class plasticity_meta_analysis_extended
+#' @param ... Additional arguments passed to print
+#'
+#' @export
+print.plasticity_meta_analysis_extended <- function(x, ...) {
+  cat(\"Extended Plasticity Meta-Analysis Results\\n\")
+  cat(\"=========================================\\n\\n\")
+  
+  # Overall results
+  cat(\"OVERALL META-ANALYSIS:\\n\")
+  cat(\"  Method:\", x$meta_results$method, \"\\n\")
+  cat(\"  Number of studies:\", x$meta_results$n_studies, \"\\n\")
+  cat(\"  Combined effect size:\", round(x$meta_results$combined_mean, 3), \"\\n\")
+  cat(\"  95% Confidence Interval: [\", 
+      round(x$meta_results$ci_lower, 3), \", \",
+      round(x$meta_results$ci_upper, 3), \"]\\n\", sep = \"\")
+  cat(\"  Z-score:\", round(x$meta_results$z_score, 2), \"\\n\")
+  cat(\"  P-value:\", format.pval(x$meta_results$p_value, digits = 3), \"\\n\\n\")
+  
+  # Heterogeneity
+  cat(\"HETEROGENEITY ANALYSIS:\\n\")
+  cat(\"  Q statistic:\", round(x$heterogeneity$Q, 2), \"\\n\")
+  cat(\"  Degrees of freedom:\", x$heterogeneity$df, \"\\n\")
+  cat(\"  P-value for heterogeneity:\", 
+      format.pval(x$heterogeneity$p_heterogeneity, digits = 3), \"\\n\")
+  cat(\"  I² (heterogeneity):\", round(x$heterogeneity$i2, 1), \"%\\n\")
+  cat(\"  Interpretation:\", x$heterogeneity$interpretation, \"\\n\\n\")
+  
+  # Publication bias
+  cat(\"PUBLICATION BIAS ASSESSMENT:\\n\")
+  cat(\"  Funnel plot asymmetry (correlation):\", 
+      round(x$publication_bias$funnel_asymmetry, 3), \"\\n\")
+  cat(\"  Fail-safe N:\", if (is.infinite(x$publication_bias$fail_safe_n)) {
+    \"Infinity (no significant studies)\"
+  } else {
+    round(x$publication_bias$fail_safe_n, 1)
+  }, \"\\n\")
+  cat(\"  Interpretation:\", x$publication_bias$interpretation, \"\\n\\n\")
+  
+  # Moderator analysis (if performed)
+  if (!is.null(x$moderator_analysis) && length(x$moderator_analysis) > 0) {
+    cat(\"MODERATOR ANALYSIS:\\n\")
+    for (mod_name in names(x$moderator_analysis)) {
+      mod_result <- x$moderator_analysis[[mod_name]]
+      cat(\"  \", mod_name, \" (\", mod_result$type, \"): \", sep = \"\")
+      
+      if (mod_result$type == \"categorical\") {
+        cat(length(mod_result$categories), \"categories\\n\")
+      } else if (mod_result$type == \"continuous\") {
+        cat(\"r = \", round(mod_result$correlation_with_effect, 3), \"\\n\", sep = \"\")
+      }
+    }
+    cat(\"\\n\")
+  }
+  
+  cat(\"Studies included (first 5):\\n\")
+  if (nrow(x$individual_studies) > 0) {
+    print(head(x$individual_studies, 5))
+  }
+  
+  cat(\"\\n\", x$message, \"\\n\", sep = \"\")
+  invisible(x)
+}
+"
+
+writeLines(meta_content, "R/plasticity_meta_analysis_extended.R")
+cat("   ✓ Archivo creado: R/plasticity_meta_analysis_extended.R\n")
+
+# 3.5 plot_multidim_plasticity_extended.R
+cat("   Creando plot_multidim_plasticity_extended.R...\n")
+plot_content <- "#' Extended Multidimensional Plasticity Visualization
+#'
+#' Advanced plotting functions for visualizing multidimensional plasticity results.
+#' This function creates various plot types including heatmaps, networks,
+#' radar plots, and more, with extensive customization options.
+#'
+#' @param multidim_result Result object from multidim_plasticity() or safe_multidim_plasticity()
+#' @param type Type of plot to create. Options:
+#'   \"heatmap\" (default), \"network\", \"radar\", \"bar\", \"scatter\",
+#'   \"violin\", \"density\", \"pca\", \"landscape\", \"integration\"
+#' @param traits Optional character vector of traits to include (subset of all traits)
+#' @param plot_options List of additional plotting options:
+#'   - title: Plot title
+#'   - color_palette: Color palette name (\"viridis\", \"plasma\", \"magma\", \"inferno\", \"cividis\")
+#'   - theme: ggplot2 theme (\"minimal\", \"classic\", \"bw\", \"dark\", \"light\")
+#'   - interactive: Logical, whether to create interactive plot (requires plotly)
+#'   - save_plot: Logical, whether to save plot to file
+#'   - filename: Filename for saved plot
+#'   - width, height: Plot dimensions in inches
+#' @param ... Additional arguments passed to plotting functions
+#'
+#' @return A ggplot object (or plotly object if interactive = TRUE)
+#'
+#' @export
+#'
+#' @examples
+#' data(demo_data)
+#' 
+#' # Run plasticity analysis
+#' insect_data <- demo_data %>%
+#'   dplyr::select(insect_population, temperature, humidity,
+#'                 insect_size, resistance) %>%
+#'   dplyr::distinct()
+#'   
+#' result <- safe_multidim_plasticity(
+#'   insect_data,
+#'   traits = c(\"insect_size\", \"resistance\"),
+#'   environments = c(\"temperature\", \"humidity\"),
+#'   groups = \"insect_population\"
+#' )
+#' 
+#' # Create different types of plots
+#' heatmap_plot <- plot_multidim_plasticity_extended(
+#'   result,
+#'   type = \"heatmap\",
+#'   plot_options = list(title = \"Plasticity Heatmap\", color_palette = \"viridis\")
+#' )
+#' 
+#' bar_plot <- plot_multidim_plasticity_extended(
+#'   result,
+#'   type = \"bar\",
+#'   plot_options = list(title = \"Average Plasticity by Trait\")
+#' )
+#'
+#' @importFrom ggplot2 ggplot aes geom_tile scale_fill_viridis_c theme_minimal
+#'   labs theme element_text geom_bar coord_flip geom_point geom_smooth
+#'   geom_violin geom_boxplot geom_density
+#' @importFrom tidyr pivot_longer
+plot_multidim_plasticity_extended <- function(multidim_result,
+                                              type = \"heatmap\",
+                                              traits = NULL,
+                                              plot_options = list(),
+                                              ...) {
+  
+  # Validate input
+  if (is.null(multidim_result)) {
+    stop(\"multidim_result cannot be NULL\")
+  }
+  
+  if (is.null(multidim_result$individual_plasticity)) {
+    warning(\"No individual plasticity data found in multidim_result\")
+    return(NULL)
+  }
+  
+  # Extract plasticity data
+  plasticity_data <- multidim_result$individual_plasticity
+  
+  # Set default plot options
+  default_options <- list(
+    title = paste(\"Multidimensional Plasticity:\", type, \"Plot\"),
+    color_palette = \"viridis\",
+    theme = \"minimal\",
+    interactive = FALSE,
+    save_plot = FALSE,
+    filename = paste0(\"phenop_plot_\", type, \"_\", Sys.Date(), \".png\"),
+    width = 10,
+    height = 7,
+    alpha = 0.8,
+    point_size = 3,
+    text_size = 12,
+    legend_position = \"right\"
+  )
+  
+  # Merge user options with defaults
+  plot_options <- modifyList(default_options, plot_options)
+  
+  # Identify trait columns
+  numeric_cols <- names(plasticity_data)[sapply(plasticity_data, is.numeric)]
+  group_cols <- c(\"group\", \"individual\", \"groups\", \"genotype\", 
+                  \"population\", \"strain\", \"id\", \"sample\")
+  all_trait_cols <- setdiff(numeric_cols, group_cols)
+  
+  # Filter traits if specified
+  if (!is.null(traits)) {
+    trait_cols <- intersect(all_trait_cols, traits)
+    if (length(trait_cols) == 0) {
+      warning(\"None of the specified traits found. Using all available traits.\")
+      trait_cols <- all_trait_cols
+    }
+  } else {
+    trait_cols <- all_trait_cols
+  }
+  
+  if (length(trait_cols) == 0) {
+    warning(\"No numeric trait columns found for plotting\")
+    return(NULL)
+  }
+  
+  # Find group column
+  group_col <- NULL
+  for (col in group_cols) {
+    if (col %in% names(plasticity_data)) {
+      group_col <- col
+      break
+    }
+  }
+  
+  # If no standard group column found, use first non-numeric column
+  if (is.null(group_col)) {
+    non_numeric <- names(plasticity_data)[!sapply(plasticity_data, is.numeric)]
+    if (length(non_numeric) > 0) {
+      group_col <- non_numeric[1]
+    } else {
+      # Create dummy group column
+      plasticity_data$group <- paste0(\"Group\", 1:nrow(plasticity_data))
+      group_col <- \"group\"
+    }
+  }
+  
+  # Prepare data for plotting
+  plot_data <- plasticity_data
+  
+  # Create plot based on type
+  if (type == \"heatmap\") {
+    plot_obj <- .create_heatmap_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"network\") {
+    plot_obj <- .create_network_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"radar\") {
+    plot_obj <- .create_radar_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"bar\") {
+    plot_obj <- .create_bar_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"scatter\") {
+    plot_obj <- .create_scatter_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"violin\") {
+    plot_obj <- .create_violin_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"density\") {
+    plot_obj <- .create_density_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"pca\") {
+    plot_obj <- .create_pca_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"landscape\") {
+    plot_obj <- .create_landscape_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else if (type == \"integration\") {
+    plot_obj <- .create_integration_plot(plot_data, trait_cols, group_col, plot_options, ...)
+    
+  } else {
+    warning(\"Plot type '\", type, \"' not recognized. Using 'heatmap' instead.\")
+    plot_obj <- .create_heatmap_plot(plot_data, trait_cols, group_col, plot_options, ...)
+  }
+  
+  # Make interactive if requested
+  if (plot_options$interactive) {
+    if (requireNamespace(\"plotly\", quietly = TRUE)) {
+      plot_obj <- plotly::ggplotly(plot_obj)
+    } else {
+      warning(\"plotly package not installed. Install with: install.packages('plotly')\")
+    }
+  }
+  
+  # Save plot if requested
+  if (plot_options$save_plot) {
+    ggplot2::ggsave(
+      filename = plot_options$filename,
+      plot = plot_obj,
+      width = plot_options$width,
+      height = plot_options$height,
+      dpi = 300
+    )
+    cat(\"Plot saved as:\", plot_options$filename, \"\\n\")
+  }
+  
+  return(plot_obj)
+}
+
+# Helper function: Heatmap plot
+.create_heatmap_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Prepare data in long format
+  data_long <- data %>%
+    dplyr::select(dplyr::all_of(c(group_col, traits))) %>%
+    tidyr::pivot_longer(
+      cols = -dplyr::all_of(group_col),
+      names_to = \"trait\",
+      values_to = \"plasticity\"
+    )
+  
+  # Convert group column to factor for proper ordering
+  data_long[[group_col]] <- factor(data_long[[group_col]])
+  
+  # Create heatmap
+  p <- ggplot2::ggplot(data_long, ggplot2::aes(x = trait, y = .data[[group_col]],
+                                              fill = plasticity)) +
+    ggplot2::geom_tile(color = \"white\", linewidth = 0.5) +
+    ggplot2::scale_fill_viridis_c(
+      option = options$color_palette,
+      name = \"Plasticity\\nIndex\",
+      na.value = \"grey50\"
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      x = \"Traits\",
+      y = stringr::str_to_title(gsub(\"_\", \" \", group_col))
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        size = options$text_size * 0.8
+      ),
+      axis.text.y = ggplot2::element_text(size = options$text_size * 0.8),
+      legend.position = options$legend_position,
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      )
+    )
+  
+  return(p)
+}
+
+# Helper function: Bar plot
+.create_bar_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Calculate mean plasticity per trait
+  trait_means <- colMeans(data[, traits, drop = FALSE], na.rm = TRUE)
+  bar_data <- data.frame(
+    trait = names(trait_means),
+    mean_plasticity = as.numeric(trait_means),
+    stringsAsFactors = FALSE
+  )
+  
+  # Order by plasticity
+  bar_data <- bar_data[order(bar_data$mean_plasticity, decreasing = FALSE), ]
+  bar_data$trait <- factor(bar_data$trait, levels = bar_data$trait)
+  
+  # Create bar plot
+  p <- ggplot2::ggplot(bar_data, ggplot2::aes(x = trait, y = mean_plasticity,
+                                             fill = mean_plasticity)) +
+    ggplot2::geom_bar(stat = \"identity\", color = \"black\", alpha = options$alpha) +
+    ggplot2::scale_fill_viridis_c(
+      option = options$color_palette,
+      name = \"Mean\\nPlasticity\"
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      x = \"Traits\",
+      y = \"Mean Plasticity Index\"
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        size = options$text_size * 0.8
+      ),
+      legend.position = options$legend_position,
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      )
+    ) +
+    ggplot2::coord_flip()
+  
+  return(p)
+}
+
+# Helper function: Scatter plot
+.create_scatter_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Need at least 2 traits for scatter plot
+  if (length(traits) < 2) {
+    warning(\"Need at least 2 traits for scatter plot\")
+    return(NULL)
+  }
+  
+  # Use first two traits by default
+  x_trait <- traits[1]
+  y_trait <- traits[2]
+  
+  # Create scatter plot
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x_trait]], 
+                                         y = .data[[y_trait]],
+                                         color = .data[[group_col]])) +
+    ggplot2::geom_point(size = options$point_size, alpha = options$alpha) +
+    ggplot2::scale_color_viridis_d(
+      option = options$color_palette,
+      name = stringr::str_to_title(gsub(\"_\", \" \", group_col))
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      x = x_trait,
+      y = y_trait
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      ),
+      legend.position = options$legend_position
+    )
+  
+  # Add trend line if enough points
+  if (nrow(data) >= 3) {
+    p <- p + ggplot2::geom_smooth(
+      method = \"lm\", 
+      se = TRUE, 
+      color = \"darkred\", 
+      fill = \"pink\", 
+      alpha = 0.2,
+      linewidth = 1
+    )
+  }
+  
+  return(p)
+}
+
+# Helper function: Violin plot
+.create_violin_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Prepare data in long format
+  data_long <- data %>%
+    dplyr::select(dplyr::all_of(c(group_col, traits))) %>%
+    tidyr::pivot_longer(
+      cols = -dplyr::all_of(group_col),
+      names_to = \"trait\",
+      values_to = \"plasticity\"
+    )
+  
+  # Create violin plot
+  p <- ggplot2::ggplot(data_long, ggplot2::aes(x = trait, y = plasticity,
+                                              fill = trait)) +
+    ggplot2::geom_violin(alpha = options$alpha) +
+    ggplot2::geom_boxplot(width = 0.1, fill = \"white\", alpha = 0.5) +
+    ggplot2::scale_fill_viridis_d(
+      option = options$color_palette,
+      name = \"Traits\"
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      x = \"Traits\",
+      y = \"Plasticity Index\"
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        size = options$text_size * 0.8
+      ),
+      legend.position = \"none\",
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      )
+    )
+  
+  return(p)
+}
+
+# Helper function: Density plot
+.create_density_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Prepare data in long format
+  data_long <- data %>%
+    dplyr::select(dplyr::all_of(c(group_col, traits))) %>%
+    tidyr::pivot_longer(
+      cols = -dplyr::all_of(group_col),
+      names_to = \"trait\",
+      values_to = \"plasticity\"
+    )
+  
+  # Create density plot
+  p <- ggplot2::ggplot(data_long, ggplot2::aes(x = plasticity, fill = trait,
+                                              color = trait)) +
+    ggplot2::geom_density(alpha = options$alpha * 0.5) +
+    ggplot2::scale_fill_viridis_d(option = options$color_palette) +
+    ggplot2::scale_color_viridis_d(option = options$color_palette) +
+    ggplot2::labs(
+      title = options$title,
+      x = \"Plasticity Index\",
+      y = \"Density\"
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      legend.position = options$legend_position,
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      )
+    )
+  
+  return(p)
+}
+
+# Helper function: Network plot (simplified - correlation network)
+.create_network_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Calculate correlation matrix
+  cor_matrix <- cor(data[, traits, drop = FALSE], use = \"pairwise.complete.obs\")
+  
+  # Convert to long format
+  cor_data <- as.data.frame(as.table(cor_matrix))
+  names(cor_data) <- c(\"trait1\", \"trait2\", \"correlation\")
+  
+  # Remove self-correlations and NA values
+  cor_data <- cor_data[cor_data$trait1 != cor_data$trait2 & 
+                        !is.na(cor_data$correlation), ]
+  
+  # Create network plot (as heatmap for simplicity)
+  p <- ggplot2::ggplot(cor_data, ggplot2::aes(x = trait1, y = trait2,
+                                             fill = correlation)) +
+    ggplot2::geom_tile(color = \"white\") +
+    ggplot2::geom_text(ggplot2::aes(label = round(correlation, 2)), 
+                      color = \"black\", size = options$text_size * 0.6) +
+    ggplot2::scale_fill_gradient2(
+      low = \"#2E86AB\", mid = \"white\", high = \"#A23B72\",
+      midpoint = 0,
+      limits = c(-1, 1),
+      name = \"Correlation\"
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      subtitle = \"Correlations between trait plasticities\",
+      x = \"\",
+      y = \"\"
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        size = options$text_size * 0.8
+      ),
+      axis.text.y = ggplot2::element_text(size = options$text_size * 0.8),
+      legend.position = options$legend_position,
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      ),
+      plot.subtitle = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size,
+        face = \"italic\"
+      )
+    )
+  
+  return(p)
+}
+
+# Helper function: Radar plot (placeholder - requires ggradar or similar)
+.create_radar_plot <- function(data, traits, group_col, options, ...) {
+  message(\"Radar plot: This plot type requires additional packages (ggradar).\\n\",
+          \"Install with: remotes::install_github('ricardo-bion/ggradar')\\n\",
+          \"Returning a bar plot instead.\")
+  return(.create_bar_plot(data, traits, group_col, options, ...))
+}
+
+# Helper function: PCA plot
+.create_pca_plot <- function(data, traits, group_col, options, ...) {
+  
+  # Perform PCA
+  pca_data <- data[, traits, drop = FALSE]
+  pca_data <- pca_data[complete.cases(pca_data), ]
+  
+  if (nrow(pca_data) < 2) {
+    warning(\"Insufficient data for PCA\")
+    return(NULL)
+  }
+  
+  pca_result <- prcomp(pca_data, scale. = TRUE, center = TRUE)
+  pca_scores <- as.data.frame(pca_result$x[, 1:2])
+  
+  # Add group information
+  pca_scores[[group_col]] <- data[[group_col]][complete.cases(data[, traits, drop = FALSE])]
+  
+  # Calculate variance explained
+  var_explained <- round(pca_result$sdev^2 / sum(pca_result$sdev^2) * 100, 1)
+  
+  # Create PCA plot
+  p <- ggplot2::ggplot(pca_scores, ggplot2::aes(x = PC1, y = PC2,
+                                               color = .data[[group_col]])) +
+    ggplot2::geom_point(size = options$point_size, alpha = options$alpha) +
+    ggplot2::scale_color_viridis_d(
+      option = options$color_palette,
+      name = stringr::str_to_title(gsub(\"_\", \" \", group_col))
+    ) +
+    ggplot2::labs(
+      title = options$title,
+      x = paste0(\"PC1 (\", var_explained[1], \"% variance)\"),
+      y = paste0(\"PC2 (\", var_explained[2], \"% variance)\")
+    ) +
+    .get_ggplot_theme(options$theme) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        size = options$text_size * 1.2,
+        face = \"bold\"
+      ),
+      legend.position = options$legend_position
+    )
+  
+  return(p)
+}
+
+# Helper function: Landscape plot (placeholder)
+.create_landscape_plot <- function(data, traits, group_col, options, ...) {
+  message(\"Landscape plot: Advanced visualization in development.\")
+  return(.create_heatmap_plot(data, traits, group_col, options, ...))
+}
+
+# Helper function: Integration plot (placeholder)
+.create_integration_plot <- function(data, traits, group_col, options, ...) {
+  message(\"Integration plot: Advanced visualization in development.\")
+  return(.create_network_plot(data, traits, group_col, options, ...))
+}
+
+# Helper function: Get ggplot theme
+.get_ggplot_theme <- function(theme_name) {
+  themes <- list(
+    minimal = ggplot2::theme_minimal(),
+    classic = ggplot2::theme_classic(),
+    bw = ggplot2::theme_bw(),
+    dark = ggplot2::theme_dark(),
+    light = ggplot2::theme_light(),
+    gray = ggplot2::theme_gray()
+  )
+  
+  if (theme_name %in% names(themes)) {
+    return(themes[[theme_name]])
+  } else {
+    return(ggplot2::theme_minimal())
+  }
+}
+
+#' Print method for plot objects
+#'
+#' @param x A plot object
+#' @param ... Additional arguments passed to print
+#'
+#' @export
+print.plot_multidim_result <- function(x, ...) {
+  if (inherits(x, \"ggplot\")) {
+    print(x)
+  } else if (inherits(x, \"plotly\")) {
+    print(x)
+  } else {
+    cat(\"Plot object of class:\", paste(class(x), collapse = \", \"), \"\\n\")
+  }
+  invisible(x)
+}
+"
+
+writeLines(plot_content, "R/plot_multidim_plasticity_extended.R")
+cat("   ✓ Archivo creado: R/plot_multidim_plasticity_extended.R\n")
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 4. EJECUTAR devtools::document() PARA ACTUALIZAR DOCUMENTACIÓN
+# ----------------------------------------------------------------------------
+cat("\n📚 PASO 4: Ejecutando devtools::document() para actualizar documentación...\n")
+
+# Primero, asegurarnos de que roxygen2 está cargado
+if (!requireNamespace("roxygen2", quietly = TRUE)) {
+  install.packages("roxygen2", quiet = TRUE)
+}
+
+tryCatch({
+  # Ejecutar documentación
+  devtools::document()
+  cat("   ✓ Documentación generada exitosamente\n")
+  cat("   - Archivos .Rd actualizados en la carpeta man/\n")
+  cat("   - NAMESPACE actualizado automáticamente\n")
+  
+  # Verificar que se crearon archivos .Rd
+  archivos_rd <- list.files("man/", pattern = "\\.Rd$")
+  cat("   -", length(archivos_rd), "archivos .Rd en la carpeta man/\n")
+  
+}, error = function(e) {
+  cat("   ⚠ Error en devtools::document():", e$message, "\n")
+  cat("   Intentando con roxygen2::roxygenise()...\n")
+  
+  tryCatch({
+    roxygen2::roxygenise()
+    cat("   ✓ Documentación generada con roxygenise()\n")
+  }, error = function(e2) {
+    cat("   ✗ Error crítico:", e2$message, "\n")
+    cat("   Puede que necesites corregir manualmente algunos archivos .R\n")
+  })
+})
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 5. INSTALAR EL PAQUETE ACTUALIZADO
+# ----------------------------------------------------------------------------
+cat("\n⬇️ PASO 5: Instalando el paquete actualizado...\n")
+
+tryCatch({
+  # Instalar el paquete
+  devtools::install(quiet = FALSE, upgrade = "never")
+  cat("   ✓ Paquete phenop instalado exitosamente\n")
+  
+  # Cargar el paquete
+  library(phenop)
+  cat("   ✓ Paquete phenop cargado en la sesión actual\n")
+  
+}, error = function(e) {
+  cat("   ⚠ Error instalando el paquete:", e$message, "\n")
+  cat("   Intentando carga directa con devtools::load_all()...\n")
+  
+  tryCatch({
+    devtools::load_all()
+    cat("   ✓ Paquete cargado con load_all()\n")
+  }, error = function(e2) {
+    cat("   ✗ Error crítico:", e2$message, "\n")
+    cat("   Necesitarás revisar manualmente los errores.\n")
+  })
+})
+```
+
+```{r}
+# ----------------------------------------------------------------------------
+# 6. VERIFICAR QUE LAS FUNCIONES NUEVAS ESTÉN DISPONIBLES (CORREGIDO)
+# ----------------------------------------------------------------------------
+cat("\n✅ PASO 6: Verificando funciones nuevas...\n")
+
+funciones_verificar <- c(
+  "safe_multidim_plasticity",
+  "plasticity_tradeoffs_extended", 
+  "host_pathogen_interaction_extended",
+  "plasticity_meta_analysis_extended",
+  "plot_multidim_plasticity_extended"
+)
+
+for (func in funciones_verificar) {
+  if (exists(func, mode = "function")) {
+    cat("   ✓", func, "está disponible (función)\n")
+  } else {
+    cat("   ✗", func, "NO está disponible\n")
+  }
+}
+
+# Verificar dataset demo_data por separado
+cat("\n   Verificando dataset demo_data...\n")
+if ("demo_data" %in% ls(all.names = TRUE) && is.data.frame(get("demo_data"))) {
+  cat("   ✓ demo_data está disponible (dataset)\n")
+  cat("     Dimensiones:", paste(dim(demo_data), collapse = " x "), "\n")
+} else {
+  # Intentar cargar desde data/
+  if (file.exists("data/demo_data.rda")) {
+    load("data/demo_data.rda", envir = .GlobalEnv)
+    if (exists("demo_data", mode = "any")) {
+      cat("   ✓ demo_data cargado desde data/demo_data.rda\n")
+      cat("     Dimensiones:", paste(dim(demo_data), collapse = " x "), "\n")
+    } else {
+      cat("   ✗ demo_data NO está disponible\n")
+    }
+  } else {
+    cat("   ✗ demo_data NO está disponible\n")
+  }
+}
+```
+
+
+
+

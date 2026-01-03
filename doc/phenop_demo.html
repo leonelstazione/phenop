@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Leonel Stazione" />
+
+<meta name="date" content="2026-01-03" />
+
+<title>Phenop Package Demonstration</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Phenop Package Demonstration</h1>
+<h4 class="author">Leonel Stazione</h4>
+<h4 class="date">2026-01-03</h4>
+
+
+
+<div id="phenop-package-comprehensive-phenotypic-plasticity-analysis" class="section level1">
+<h1>Phenop Package: Comprehensive Phenotypic Plasticity Analysis</h1>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The <code>phenop</code> package provides comprehensive tools for
+analyzing phenotypic plasticity in ecological and evolutionary studies.
+This vignette demonstrates the main functionalities of the package.</p>
+</div>
+<div id="loading-the-package" class="section level2">
+<h2>Loading the Package</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(phenop)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># Check package version</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">packageVersion</span>(<span class="st">&quot;phenop&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] &#39;0.1.0&#39;</code></pre>
+</div>
+<div id="demo-dataset" class="section level2">
+<h2>Demo Dataset</h2>
+<p>The package includes a simulated dataset for demonstration:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Load demo dataset</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">data</span>(demo_data)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># View dataset structure</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">str</span>(demo_data)</span></code></pre></div>
+<pre><code>## &#39;data.frame&#39;:    200 obs. of  8 variables:
+##  $ insect_population: chr  &quot;P3&quot; &quot;P3&quot; &quot;P3&quot; &quot;P2&quot; ...
+##  $ fungus_strain    : chr  &quot;C3&quot; &quot;C2&quot; &quot;C3&quot; &quot;C2&quot; ...
+##  $ temperature      : num  20.1 22 16.2 27.9 20.9 ...
+##  $ humidity         : num  57.2 65.2 60.8 66.4 69.2 ...
+##  $ insect_size      : num  7.08 6.95 10.01 14.28 10.25 ...
+##  $ resistance       : num  3.71 4.56 4.47 3.37 4.29 ...
+##  $ fungus_growth    : num  9.3 6.97 10.76 11.72 9.51 ...
+##  $ virulence        : num  7.09 5.68 5.78 5.96 4.21 ...</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># First few rows</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">head</span>(demo_data)</span></code></pre></div>
+<pre><code>##   insect_population fungus_strain temperature humidity insect_size resistance
+## 1                P3            C3    20.11982 57.15762    7.081562   3.710300
+## 2                P3            C2    21.97071 65.23094    6.949271   4.558946
+## 3                P3            C3    16.23797 60.83369   10.008391   4.471703
+## 4                P2            C2    27.90160 66.38485   14.279201   3.365575
+## 5                P3            C3    20.93491 69.17444   10.251117   4.294746
+## 6                P2            C1    26.03849 59.47291    9.665952   2.871762
+##   fungus_growth virulence
+## 1      9.298047  7.093912
+## 2      6.974976  5.677971
+## 3     10.756405  5.784374
+## 4     11.724959  5.959367
+## 5      9.506335  4.206543
+## 6      7.132270  7.581192</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Summary statistics</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">summary</span>(demo_data)</span></code></pre></div>
+<pre><code>##  insect_population  fungus_strain       temperature       humidity    
+##  Length:200         Length:200         Min.   :15.24   Min.   :40.05  
+##  Class :character   Class :character   1st Qu.:19.14   1st Qu.:50.27  
+##  Mode  :character   Mode  :character   Median :22.92   Median :60.96  
+##                                        Mean   :22.69   Mean   :59.91  
+##                                        3rd Qu.:26.99   3rd Qu.:69.52  
+##                                        Max.   :29.90   Max.   :79.80  
+##   insect_size       resistance    fungus_growth      virulence    
+##  Min.   : 4.478   Min.   :1.959   Min.   : 5.122   Min.   :3.879  
+##  1st Qu.: 8.764   1st Qu.:4.155   1st Qu.: 7.940   1st Qu.:5.563  
+##  Median :10.261   Median :4.793   Median : 8.861   Median :6.218  
+##  Mean   :10.126   Mean   :4.822   Mean   : 8.947   Mean   :6.278  
+##  3rd Qu.:11.335   3rd Qu.:5.468   3rd Qu.:10.111   3rd Qu.:6.983  
+##  Max.   :16.883   Max.   :8.464   Max.   :13.595   Max.   :9.393</code></pre>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data Preparation</h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Prepare insect (host) data</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>insect_data <span class="ot">&lt;-</span> demo_data <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="fu">select</span>(insect_population, temperature, humidity,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>         insect_size, resistance) <span class="sc">%&gt;%</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># Prepare fungus (pathogen) data  </span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>fungus_data <span class="ot">&lt;-</span> demo_data <span class="sc">%&gt;%</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="fu">select</span>(fungus_strain, temperature, humidity,</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>         fungus_growth, virulence) <span class="sc">%&gt;%</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Insect dataset dimensions:&quot;</span>, <span class="fu">dim</span>(insect_data), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## Insect dataset dimensions: 200 5</code></pre>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Fungus dataset dimensions:&quot;</span>, <span class="fu">dim</span>(fungus_data), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## Fungus dataset dimensions: 200 5</code></pre>
+</div>
+<div id="safe-multidimensional-plasticity-analysis" class="section level2">
+<h2>1. Safe Multidimensional Plasticity Analysis</h2>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Run safe multidimensional plasticity analysis</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>insect_results <span class="ot">&lt;-</span> <span class="fu">safe_multidim_plasticity</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  insect_data,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">traits =</span> <span class="fu">c</span>(<span class="st">&quot;insect_size&quot;</span>, <span class="st">&quot;resistance&quot;</span>),</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">environments =</span> <span class="fu">c</span>(<span class="st">&quot;temperature&quot;</span>, <span class="st">&quot;humidity&quot;</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">groups =</span> <span class="st">&quot;insect_population&quot;</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">na.action =</span> <span class="st">&quot;omit&quot;</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>)</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co"># View results</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="fu">print</span>(insect_results)</span></code></pre></div>
+<pre><code>## Safe Multidimensional Plasticity Analysis Results
+## ==================================================
+## 
+## ANALYSIS SUMMARY:
+##   Status: SUCCESS 
+##   Traits analyzed: insect_size, resistance 
+##   Environments: temperature, humidity 
+##   Groups variable: insect_population 
+##   Number of groups: 3 
+##   Number of observations: 200 
+##   Computation time: 0 seconds
+## 
+## MULTIDIMENSIONAL PLASTICITY INDEX (MPI):
+##   MPI value: 0.6394 
+##   Method: unweighted mean 
+##   Range across groups: 0.3879 to 0.943 
+## 
+## GROUP PLASTICITY (first 5 groups):
+##   group mean_plasticity sd_plasticity n_traits
+## 1    P3       0.5010033    0.15994530        2
+## 2    P2       0.5399110    0.12154674        2
+## 3    P1       0.8773773    0.09282285        2
+## 
+## Safe multidimensional plasticity analysis completed successfully. Analyzed 2 traits across 3 groups.</code></pre>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Access individual components</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Multidimensional Plasticity Index (MPI):&quot;</span>, </span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>    <span class="fu">round</span>(insect_results<span class="sc">$</span>multidimensional_index<span class="sc">$</span>index, <span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Multidimensional Plasticity Index (MPI): 0.639</code></pre>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Number of groups analyzed:&quot;</span>, insect_results<span class="sc">$</span>safe_analysis<span class="sc">$</span>n_groups, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## Number of groups analyzed: 3</code></pre>
+</div>
+<div id="extended-trade-off-analysis" class="section level2">
+<h2>2. Extended Trade-off Analysis</h2>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># Analyze trade-offs between plasticity indices</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>tradeoff_results <span class="ot">&lt;-</span> <span class="fu">plasticity_tradeoffs_extended</span>(</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  insect_results,</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;correlation&quot;</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>  <span class="at">threshold =</span> <span class="sc">-</span><span class="fl">0.5</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>  <span class="at">p_value_threshold =</span> <span class="fl">0.05</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>)</span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="fu">print</span>(tradeoff_results)</span></code></pre></div>
+<pre><code>## Extended Phenotypic Plasticity Trade-off Analysis
+## ==================================================
+## 
+## ANALYSIS PARAMETERS:
+##   Method: correlation 
+##   Correlation threshold: -0.5 
+##   P-value threshold: 0.05 
+##   Number of traits: 2 
+##   Number of groups: 3 
+## 
+## SIGNIFICANT TRADE-OFFS: 0 found
+##   No significant trade-offs found
+## 
+## Trade-off analysis completed. 0 significant trade-offs found.</code></pre>
+</div>
+<div id="extended-host-pathogen-interaction-analysis" class="section level2">
+<h2>3. Extended Host-Pathogen Interaction Analysis</h2>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># Analyze host-pathogen interactions</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>interaction_results <span class="ot">&lt;-</span> <span class="fu">host_pathogen_interaction_extended</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  <span class="at">host_data =</span> insect_data,</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="at">pathogen_data =</span> fungus_data,</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>  <span class="at">host_traits =</span> <span class="fu">c</span>(<span class="st">&quot;insect_size&quot;</span>, <span class="st">&quot;resistance&quot;</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  <span class="at">pathogen_traits =</span> <span class="fu">c</span>(<span class="st">&quot;fungus_growth&quot;</span>, <span class="st">&quot;virulence&quot;</span>),</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="at">interaction_metrics =</span> <span class="fu">c</span>(<span class="st">&quot;correlation&quot;</span>, <span class="st">&quot;plasticity_matching&quot;</span>),</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>  <span class="at">environments =</span> <span class="fu">c</span>(<span class="st">&quot;temperature&quot;</span>, <span class="st">&quot;humidity&quot;</span>),</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>  <span class="at">host_group =</span> <span class="st">&quot;insect_population&quot;</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="at">pathogen_group =</span> <span class="st">&quot;fungus_strain&quot;</span></span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>## Analyzing host plasticity...
+## Analyzing pathogen plasticity...
+## Calculating trait correlations...
+## Calculating plasticity matching indices...
+## Preparing visualization data...</code></pre>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">print</span>(interaction_results)</span></code></pre></div>
+<pre><code>## Extended Host-Pathogen Interaction Analysis
+## ============================================
+## 
+## ANALYSIS METADATA:
+##   Host traits: insect_size, resistance 
+##   Pathogen traits: fungus_growth, virulence 
+##   Environments: temperature, humidity 
+##   Metrics calculated: correlation, plasticity_matching 
+## 
+## PLASTICITY MATCHING:
+##   Host MPI: 0.639 
+##   Pathogen MPI: 0.639 
+##   Absolute difference: 0 
+##   Matching interpretation: High plasticity matching 
+## 
+## TRAIT CORRELATIONS: 4 pairs analyzed
+##   Strongest correlation: insect_size_vs_fungus_growth = 1 
+## 
+## Host-pathogen interaction analysis completed. Both host and pathogen plasticity analyzed successfully.</code></pre>
+</div>
+<div id="extended-meta-analysis" class="section level2">
+<h2>4. Extended Meta-Analysis</h2>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Create simulated meta-analysis data</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>n_studies <span class="ot">&lt;-</span> <span class="dv">12</span></span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>meta_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a>  <span class="at">study =</span> <span class="fu">paste</span>(<span class="st">&quot;Study&quot;</span>, <span class="dv">1</span><span class="sc">:</span>n_studies),</span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>  <span class="at">effect_size =</span> <span class="fu">rnorm</span>(n_studies, <span class="at">mean =</span> <span class="fl">0.6</span>, <span class="at">sd =</span> <span class="fl">0.25</span>),</span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>  <span class="at">variance =</span> <span class="fu">runif</span>(n_studies, <span class="fl">0.05</span>, <span class="fl">0.15</span>),</span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2010</span><span class="sc">:</span><span class="dv">2021</span>,</span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a>  <span class="at">organism =</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">&quot;Insect&quot;</span>, <span class="st">&quot;Fungus&quot;</span>, <span class="st">&quot;Plant&quot;</span>), n_studies, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a>  <span class="at">trait_type =</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">&quot;Morphological&quot;</span>, <span class="st">&quot;Physiological&quot;</span>, <span class="st">&quot;Life History&quot;</span>), </span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a>                     n_studies, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a>)</span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a></span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a><span class="co"># Run meta-analysis</span></span>
+<span id="cb25-16"><a href="#cb25-16" tabindex="-1"></a>meta_results <span class="ot">&lt;-</span> <span class="fu">plasticity_meta_analysis_extended</span>(</span>
+<span id="cb25-17"><a href="#cb25-17" tabindex="-1"></a>  <span class="at">study_data =</span> meta_data,</span>
+<span id="cb25-18"><a href="#cb25-18" tabindex="-1"></a>  <span class="at">effect_size =</span> <span class="st">&quot;effect_size&quot;</span>,</span>
+<span id="cb25-19"><a href="#cb25-19" tabindex="-1"></a>  <span class="at">variance =</span> <span class="st">&quot;variance&quot;</span>,</span>
+<span id="cb25-20"><a href="#cb25-20" tabindex="-1"></a>  <span class="at">study_labels =</span> <span class="st">&quot;study&quot;</span>,</span>
+<span id="cb25-21"><a href="#cb25-21" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;random&quot;</span>,</span>
+<span id="cb25-22"><a href="#cb25-22" tabindex="-1"></a>  <span class="at">moderator =</span> <span class="fu">c</span>(<span class="st">&quot;year&quot;</span>, <span class="st">&quot;organism&quot;</span>)</span>
+<span id="cb25-23"><a href="#cb25-23" tabindex="-1"></a>)</span>
+<span id="cb25-24"><a href="#cb25-24" tabindex="-1"></a></span>
+<span id="cb25-25"><a href="#cb25-25" tabindex="-1"></a><span class="fu">print</span>(meta_results)</span></code></pre></div>
+<pre><code>## Extended Plasticity Meta-Analysis Results
+## =========================================
+## 
+## OVERALL META-ANALYSIS:
+##   Method: Random effects (DerSimonian-Laird) 
+##   Number of studies: 12 
+##   Combined effect size: 0.699 
+##   95% Confidence Interval: [0.523, 0.876]
+##   Z-score: 7.76 
+##   P-value: 8.44e-15 
+## 
+## HETEROGENEITY ANALYSIS:
+##   Q statistic: 6.31 
+##   Degrees of freedom: 11 
+##   P-value for heterogeneity: 0.852 
+##   I² (heterogeneity): 0 %
+##   Interpretation: Low heterogeneity 
+## 
+## PUBLICATION BIAS ASSESSMENT:
+##   Funnel plot asymmetry (correlation): 0.675 
+##   Fail-safe N: 13 
+##   Interpretation: Potential publication bias detected 
+## 
+## MODERATOR ANALYSIS:
+##   year (continuous): r = -0.001
+##   organism (categorical): 3 categories
+## 
+## Studies included (first 5):
+##     study effect_size   variance    weight    ci_lower ci_upper
+## 1 Study 1   0.4598811 0.11557058  7.026602 -0.20643411 1.126196
+## 2 Study 2   0.5424556 0.12085305  6.719470 -0.13891730 1.223829
+## 3 Study 3   0.9896771 0.10440660  7.777941  0.35636167 1.622992
+## 4 Study 4   0.6176271 0.10941420  7.421965 -0.03069813 1.265952
+## 5 Study 5   0.6323219 0.07891597 10.290292  0.08171899 1.182925
+## 
+## Meta-analysis completed using Random effects (DerSimonian-Laird) model. Combined effect size: 0.699 [CI: 0.523 to 0.876 ]. I² = 0 %.</code></pre>
+</div>
+<div id="extended-visualization" class="section level2">
+<h2>5. Extended Visualization</h2>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Create heatmap</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>heatmap_plot <span class="ot">&lt;-</span> <span class="fu">plot_multidim_plasticity_extended</span>(</span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a>  insect_results,</span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;heatmap&quot;</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a>  <span class="at">plot_options =</span> <span class="fu">list</span>(</span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Plasticity Heatmap - Insect Traits&quot;</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a>    <span class="at">color_palette =</span> <span class="st">&quot;viridis&quot;</span>,</span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a>    <span class="at">theme =</span> <span class="st">&quot;minimal&quot;</span></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a>  )</span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a>)</span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a><span class="fu">print</span>(heatmap_plot)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" width="90%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>The <code>phenop</code> package provides a comprehensive suite of
+tools for phenotypic plasticity analysis:</p>
+<ul>
+<li><strong>Safe Multidimensional Plasticity Analysis</strong>: Robust
+calculation of plasticity indices</li>
+<li><strong>Trade-off Analysis</strong>: Identification of constraints
+in multivariate plasticity</li>
+<li><strong>Host-Pathogen Interactions</strong>: Analysis of
+co-evolutionary plasticity dynamics</li>
+<li><strong>Meta-Analysis</strong>: Synthesis of plasticity studies with
+publication bias assessment</li>
+<li><strong>Advanced Visualization</strong>: Multiple plot types with
+extensive customization</li>
+</ul>
+</div>
+<div id="getting-help" class="section level2">
+<h2>Getting Help</h2>
+<p>For additional help:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># View help for specific functions</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>?safe_multidim_plasticity</span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>?plasticity_tradeoffs_extended</span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>?host_pathogen_interaction_extended</span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="co"># View all available functions</span></span>
+<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;phenop&quot;</span>)</span></code></pre></div>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session Information</h2>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.0 (2025-04-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8 
+## [2] LC_CTYPE=English_United States.utf8   
+## [3] LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.utf8    
+## 
+## time zone: Europe/Rome
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] ggplot2_4.0.0 dplyr_1.1.4   phenop_0.1.0 
+## 
+## loaded via a namespace (and not attached):
+##  [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.5.0     tidyselect_1.2.1  
+##  [5] stringr_1.5.1      tidyr_1.3.1        jquerylib_0.1.4    scales_1.4.0      
+##  [9] yaml_2.3.10        fastmap_1.2.0      R6_2.6.1           labeling_0.4.3    
+## [13] generics_0.1.4     knitr_1.50         tibble_3.3.0       bslib_0.9.0       
+## [17] pillar_1.11.0      RColorBrewer_1.1-3 rlang_1.1.6        cachem_1.1.0      
+## [21] stringi_1.8.7      xfun_0.52          sass_0.4.10        S7_0.2.0          
+## [25] viridisLite_0.4.2  cli_3.6.5          withr_3.0.2        magrittr_2.0.3    
+## [29] digest_0.6.37      grid_4.5.0         rstudioapi_0.17.1  lifecycle_1.0.4   
+## [33] vctrs_0.6.5        evaluate_1.0.4     glue_1.8.0         farver_2.1.2      
+## [37] rmarkdown_2.29     purrr_1.1.0        tools_4.5.0        pkgconfig_2.0.3   
+## [41] htmltools_0.5.8.1</code></pre>
+<hr />
+<p><em>This vignette was generated on 2026-01-03 using phenop version
+0.1.0.</em></p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

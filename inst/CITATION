@@ -1,0 +1,17 @@
+citHeader("To cite phenop in publications use:")
+
+citEntry(entry = "Manual",
+         title = "phenop: Multidimensional Analysis of Phenotypic Plasticity",
+         author = personList(
+           person("Leonel", "Stazione", 
+                  email = "leonelstazione@hotmail.com",
+                  role = c("aut", "cre"))
+         ),
+         year = 2026,
+         version = "0.1.0",
+         url = "https://github.com/leonelstazione/phenop",
+         
+         textVersion = 
+         paste("Stazione, L. (2026). phenop: Multidimensional Analysis of",
+               "Phenotypic Plasticity. R package version 0.1.0.")
+)

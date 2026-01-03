@@ -1,0 +1,35 @@
+Package: phenop
+Title: Multidimensional Analysis of Phenotypic Plasticity in Eco-Evolutionary Contexts
+Version: 0.1.0
+Description: Provides novel methods for analyzing phenotypic plasticity across 
+    multiple traits and environmental variables, with special focus on 
+    insect-fungus host-pathogen systems. Implements original multidimensional 
+    plasticity indices and interaction analyses not available in other packages.
+Authors@R: 
+    person("Leonel", "Stazione", 
+           email = "leonelstazione@hotmail.com", 
+           role = c("aut", "cre"))
+License: MIT + file LICENSE
+URL: https://github.com/leonelstazione/phenop
+BugReports: https://github.com/leonelstazione/phenop/issues
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+VignetteBuilder: knitr
+Depends: 
+    R (>= 4.0.0)
+Imports:
+    dplyr (>= 1.0.0),
+    ggplot2 (>= 3.4.0),
+    magrittr (>= 2.0.0),
+    MASS,
+    stats,
+    tibble (>= 3.0.0),
+    tidyr (>= 1.0.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    covr
+

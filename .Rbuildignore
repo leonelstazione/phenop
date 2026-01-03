@@ -1,0 +1,12 @@
+^phenop\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^data-raw$
+^doc$
+^Meta$
+^run_tests\.R$
+^tests/testthat/helpers/$
+^tests/testthat/template_test\.R$
+^run_tests\.R$
+^tests/testthat/helpers/$
+^tests/testthat/template_test\.R$

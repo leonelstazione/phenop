@@ -2,13 +2,9 @@ name: Compile JOSS Paper
 
 on:
   push:
-    paths:
-      - paper/**
-      - .github/workflows/joss-paper.yml
-  pull_request:
-    paths:
-      - paper/**
-      - .github/workflows/joss-paper.yml
+    branches:
+      - main  # o tu rama principal
+
 
 permissions:
   contents: read

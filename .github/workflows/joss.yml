@@ -10,31 +10,23 @@ on:
 
 jobs:
   paper:
-    runs-on: ubuntu-latest
-    container:
-      image: rocker/r-ver:4.2.3   # Imagen con R preinstalado
+    runs-on: windows-latest
+
     steps:
-      # 1️⃣ Clonar el repositorio
+      # 1️⃣ Clonar repo
       - uses: actions/checkout@v4
 
-      # 2️⃣ Configurar cache para paquetes R
-      - name: Cache R packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ runner.os }}-R-lib
-          key: ${{ runner.os }}-R-${{ hashFiles('paper/**/DESCRIPTION') }}
-          restore-keys: |
-            ${{ runner.os }}-R-
+      # 2️⃣ Instalar R con Chocolatey
+      - name: Install R
+        run: choco install r.project -y
+        shell: powershell
 
-      # 3️⃣ Instalar paquetes R necesarios
+      # 3️⃣ Instalar paquetes necesarios
       - name: Install R packages
         run: |
-          install.packages(c("remotes", "rcmdcheck"),
-                           repos = "https://cloud.r-project.org",
-                           lib = "${{ runner.os }}-R-lib",
-                           type = "binary")
+          Rscript -e "install.packages(c('remotes','rcmdcheck'), repos='https://cloud.r-project.org')"
 
-      # 4️⃣ Construir paper con OpenJOSS
+      # 4️⃣ Construir JOSS paper
       - name: Build JOSS paper
         uses: openjournals/openjournals-docker-action@v1
         with:

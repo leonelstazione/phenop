@@ -28,15 +28,15 @@ jobs:
           install.packages(c("remotes", "rcmdcheck"))
           remotes::install_deps(dependencies = TRUE)
 
-      # 4️⃣ Construir el paper JOSS usando Docker
+      # 4️⃣ Construir el paper JOSS usando la acción oficial actualizada
       - name: Build JOSS paper
-        uses: openjournals/openjournals-docker-action@v1
+        uses: openjournals/joss-paper-action@v1
         with:
           journal: joss
 
       # 5️⃣ Subir el PDF generado como artefacto
       - name: Upload PDF
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: joss-paper-pdf
           path: paper/_paperdown/*.pdf

@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Build JOSS paper with INARA
+      - name: Build JOSS paper
         run: |
           docker pull openjournals/inara
           docker run --rm \
             -v ${{ github.workspace }}:/data \
+            -w /data/paper \
             openjournals/inara
 
       - name: Upload PDF

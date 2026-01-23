@@ -7,7 +7,7 @@ tags:
   - eco-evolutionary dynamics
   - multidimensional analysis
 authors:
-  - name: Leonel Stazione
+  - name: Leonel Stazione 
     orcid: 0000-0002-5415-8124
     affiliation: 1
 affiliations:

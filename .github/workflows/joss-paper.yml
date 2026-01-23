@@ -14,12 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build JOSS paper (Docker official)
+      - name: Build JOSS paper with INARA
         run: |
-          docker pull openjournals/joss
+          docker pull openjournals/inara
           docker run --rm \
             -v ${{ github.workspace }}:/data \
-            openjournals/joss
+            openjournals/inara
 
       - name: Upload PDF
         uses: actions/upload-artifact@v4

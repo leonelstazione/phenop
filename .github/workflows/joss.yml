@@ -18,3 +18,4 @@ jobs:
         uses: openjournals/openjournals-docker-action@v1
         with:
           journal: joss
+          r-version: '4.3'

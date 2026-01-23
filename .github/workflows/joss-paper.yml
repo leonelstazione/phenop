@@ -10,10 +10,6 @@ on:
       - paper/**
       - .github/workflows/joss-paper.yml
 
-permissions:
-  contents: read
-  actions: write
-
 jobs:
   build-paper:
     runs-on: ubuntu-latest
@@ -22,21 +18,21 @@ jobs:
       # 1️⃣ Clonar el repositorio
       - uses: actions/checkout@v4
 
-      # 2️⃣ Configurar R (versión moderna, no 3.6.3)
+      # 2️⃣ Configurar R (versión moderna)
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: '4.3'
 
-      # 3️⃣ Instalar dependencias necesarias para construir el paper
+      # 3️⃣ Instalar dependencias
       - name: Install dependencies
         run: |
           install.packages(c("remotes", "rcmdcheck"))
           remotes::install_deps(dependencies = TRUE)
 
-      # 4️⃣ Construir el paper JOSS usando la acción oficial
+      # 4️⃣ Construir el paper JOSS usando Docker
       - name: Build JOSS paper
-        uses: openjournals/joss-paper-action@v1
+        uses: openjournals/openjournals-docker-action@v1
         with:
           journal: joss
 

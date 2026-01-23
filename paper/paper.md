@@ -1,17 +1,17 @@
 ---
 title: "phenop: An R package for multidimensional analysis of phenotypic plasticity in eco-evolutionary contexts"
 tags:
-  - R
-  - phenotypic plasticity
-  - phenology
-  - eco-evolutionary dynamics
-  - multidimensional analysis
+    R
+    phenotypic plasticity
+    phenology
+    eco-evolutionary dynamics
+    multidimensional analysis
 authors:
-  - name: Leonel Stazione 
+    name: Leonel Stazione 
     orcid: 0000-0002-5415-8124
     affiliation: 1
 affiliations:
-  - index: 1
+    index: 1
     name: Department of Agricultural, Food, Environmental and Forestry Science and Technology (DAGRI), University of Florence, Italy
 date: 23 January 2026
 bibliography: paper.bib

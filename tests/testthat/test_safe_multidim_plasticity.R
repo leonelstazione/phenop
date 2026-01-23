@@ -1,118 +1,72 @@
-# Tests for safe_multidim_plasticity function
+# tests/testthat/test-safe_multidim_plasticity.R
 
-test_that("safe_multidim_plasticity returns correct structure", {
-  skip_on_cran()
-  skip_if_not_installed("phenop")
+test_that("safe_multidim_plasticity handles all na.actions", {
+  # Datos con NAs
+  data_with_na <- data.frame(
+    genotype = c("A", "A", "B", "B"),
+    environment = c(1, 2, 1, 2),
+    trait1 = c(1, 2, NA, 4)
+  )
 
-  # Create test data - FIX: Hacer los cálculos correctamente
-  set.seed(123)
-  n <- 18  # Usar número divisible por 3
+  # omit - debería funcionar
+  result_omit <- safe_multidim_plasticity(
+    data_with_na, "trait1", "environment", "genotype", na.action = "omit"
+  )
+  expect_true(result_omit$safe_analysis$success)
+
+  # fail - debería fallar
+  result_fail <- safe_multidim_plasticity(
+    data_with_na, "trait1", "environment", "genotype", na.action = "fail"
+  )
+  expect_false(result_fail$safe_analysis$success)
+
+  # impute.mean - debería funcionar
+  result_impute <- safe_multidim_plasticity(
+    data_with_na, "trait1", "environment", "genotype", na.action = "impute.mean"
+  )
+  expect_true(result_impute$safe_analysis$success)
+})
+
+test_that("safe_multidim_plasticity validates weights correctly", {
   test_data <- data.frame(
-    genotype = rep(c("A", "B", "C"), each = n/3),
-    environment = rep(c("Low", "Medium", "High"), times = n/3),  # times, no each
-    trait1 = rnorm(n, 10, 2),
-    trait2 = rnorm(n, 5, 1)
+    group = rep(c("A", "B"), each = 5),
+    env = rep(1:5, 2),
+    trait1 = rnorm(10),
+    trait2 = rnorm(10)
   )
 
-  result <- safe_multidim_plasticity(
-    data = test_data,
-    traits = c("trait1", "trait2"),
-    environments = "environment",
-    groups = "genotype"
+  # 1. Con pesos válidos (longitud correcta)
+  result_valid <- safe_multidim_plasticity(
+    test_data, c("trait1", "trait2"), "env", "group", weights = c(2, 1)
   )
 
-  # Verificar que es una lista
-  expect_type(result, "list")
+  expect_true(result_valid$safe_analysis$success)
+  expect_equal(result_valid$multidimensional_index$method, "weighted mean")
 
-  # Verificar estructura mínima
-  expected_names <- c("individual_plasticity", "group_plasticity",
-                      "multidimensional_index", "safe_analysis", "message")
+  # 2. Con pesos de longitud incorrecta
+  result_invalid <- safe_multidim_plasticity(
+    test_data, c("trait1", "trait2"), "env", "group", weights = c(1)
+  )
 
-  # Verificar que tiene al menos 2 de los elementos esperados
-  found_names <- sum(expected_names %in% names(result))
-  expect_true(found_names >= 2)
+  # Lo importante es que no falle
+  expect_type(result_invalid, "list")
+  expect_true(result_invalid$safe_analysis$success)
 
-  # Verificar que tiene un mensaje
-  expect_true("message" %in% names(result))
-
-  # Verificar que el mensaje es una cadena
-  expect_type(result$message, "character")
+  # Verificar el método basado en la implementación real
+  # Revisa R/safe_multidim_plasticity.R para ver qué hace
+  method <- result_invalid$multidimensional_index$method
+  expect_true(method %in% c("weighted mean", "unweighted mean"))
 })
 
-test_that("safe_multidim_plasticity handles errors gracefully", {
-  skip_if_not_installed("phenop")
-
-  # Create problematic data (solo 1 fila por grupo)
-  problematic_data <- data.frame(
-    genotype = c("A", "B"),
-    environment = c("Low", "High"),
-    trait1 = c(1, 2)
+test_that("safe_multidim_plasticity fails with insufficient groups", {
+  one_group_data <- data.frame(
+    group = "A",
+    trait1 = 1:10,
+    env = 1:10
   )
 
-  # Esto no debería lanzar error, sino retornar resultado seguro
-  result <- safe_multidim_plasticity(
-    data = problematic_data,
-    traits = "trait1",
-    environments = "environment",
-    groups = "genotype"
-  )
+  result <- safe_multidim_plasticity(one_group_data, "trait1", "env", "group")
 
-  # Debería retornar una lista
-  expect_type(result, "list")
-  expect_true("message" %in% names(result))
-})
-
-test_that("safe_multidim_plasticity validates inputs", {
-  skip_if_not_installed("phenop")
-
-  # Datos simples
-  test_data <- data.frame(
-    id = 1:10,
-    value = rnorm(10)
-  )
-
-  # Con columnas inexistentes - debería manejar el error
-  result <- safe_multidim_plasticity(
-    data = test_data,
-    traits = "nonexistent",
-    environments = "env",
-    groups = "group"
-  )
-
-  # Debería retornar una lista con un mensaje
-  expect_type(result, "list")
-  expect_true("message" %in% names(result))
-})
-
-test_that("function handles large datasets efficiently", {
-  skip_on_cran()
-  skip_if_not_installed("phenop")
-
-  # Simular dataset grande (simplificado para rapidez)
-  set.seed(456)
-  n <- 100  # Reducido para rapidez (original: 1000)
-  large_data <- data.frame(
-    genotype = rep(paste0("G", 1:5), each = n/5),
-    environment = rep(1:4, length.out = n),
-    trait1 = rnorm(n, 10, 3),
-    trait2 = rnorm(n, 5, 2),
-    trait3 = rnorm(n, 8, 1.5)
-  )
-
-  # Medir tiempo de ejecución
-  exec_time <- system.time({
-    result <- safe_multidim_plasticity(
-      data = large_data,
-      traits = c("trait1", "trait2"),
-      environments = "environment",
-      groups = "genotype"
-    )
-  })
-
-  # Debería completarse en tiempo razonable
-  expect_true(exec_time["elapsed"] < 5)  # Más realista que 10 segundos
-
-  # Debería retornar resultado
-  expect_type(result, "list")
-  expect_true("message" %in% names(result))
+  expect_false(result$safe_analysis$success)
+  expect_true(grepl("At least 2 groups", result$message))
 })

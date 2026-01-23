@@ -10,3 +10,9 @@
 ^run_tests\.R$
 ^tests/testthat/helpers/$
 ^tests/testthat/template_test\.R$
+^\.github$
+^\.github/.*
+^pkgdown$
+^README\.Rmd$
+^_pkgdown\.yml$
+^docs$

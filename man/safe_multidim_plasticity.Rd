@@ -39,24 +39,26 @@ A list containing:
 }
 \description{
 A robust version of multidimensional plasticity analysis with error handling
-and data validation. This function is designed to work with various data
-structures and provides informative error messages.
+and data validation. This function calculates actual plasticity indices
+based on environmental variation in phenotypic traits.
 }
 \examples{
-data(demo_data)
+# Create example data with real variability
+set.seed(123)
+example_data <- data.frame(
+  genotype = rep(paste0("G", 1:10), each = 4),
+  environment = rep(c("Cold", "Cool", "Warm", "Hot"), 10),
+  trait1 = rnorm(40, mean = 10, sd = 2),
+  trait2 = rnorm(40, mean = 5, sd = 1),
+  trait3 = rnorm(40, mean = 20, sd = 3)
+)
 
-# Prepare data
-insect_data <- demo_data \%>\%
-  dplyr::select(insect_population, temperature, humidity,
-                insect_size, resistance) \%>\%
-  dplyr::distinct()
-
-# Run safe analysis
+# Run analysis
 result <- safe_multidim_plasticity(
-  insect_data,
-  traits = c("insect_size", "resistance"),
-  environments = c("temperature", "humidity"),
-  groups = "insect_population"
+  data = example_data,
+  traits = c("trait1", "trait2", "trait3"),
+  environments = "environment",
+  groups = "genotype"
 )
 
 print(result)

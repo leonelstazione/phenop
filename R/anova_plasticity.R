@@ -20,13 +20,10 @@
 #'
 #' anova_plasticity(trait_value ~ genotype * environment, example_data)
 anova_plasticity <- function(formula, data, return_type = "anova") {
-
   # Ajustar el modelo lineal
   model <- stats::lm(formula, data = data)
-
   # Realizar ANOVA
   anova_result <- stats::anova(model)
-
   # Retornar según el tipo solicitado
   if (return_type == "anova") {
     return(anova_result)
@@ -38,3 +35,4 @@ anova_plasticity <- function(formula, data, return_type = "anova") {
     stop("return_type must be 'anova', 'model', or 'summary'")
   }
 }
+

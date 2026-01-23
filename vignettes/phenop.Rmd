@@ -1,0 +1,1136 @@
+---
+title: "Multidimensional Phenotypic Plasticity Analysis with phenop"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multidimensional Phenotypic Plasticity Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center",
+  warning = FALSE,
+  message = FALSE,
+  out.width = "100%"
+)
+```
+
+```{r}
+# Load required packages
+library(phenop)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+if (requireNamespace("kableExtra", quietly = TRUE)) {
+  library(kableExtra)
+} else {
+  message("kableExtra no está instalado, usando formato básico para tablas")
+  # Código alternativo sin kableExtra
+  kable <- function(x, ...) knitr::kable(x, ...)
+}
+
+# Set theme for consistent plotting
+theme_set(theme_minimal(base_size = 12))
+```
+
+```{r}
+# Load all synthetic datasets
+demo_data <- read.csv("../inst/extdata/demo_data_synthetic.csv")
+pheno_params <- read.csv("../inst/extdata/pheno_parameters_synthetic.csv")
+pheno_timeseries <- read.csv("../inst/extdata/pheno_time_series_synthetic.csv")
+tree_insect_fungi <- read.csv("../inst/extdata/tree_insect_fungi_synthetic.csv")
+
+
+# Create comprehensive data summary table
+data_summary <- data.frame(
+  Dataset = c("demo_data", "pheno_params", "pheno_timeseries", "tree_insect_fungi"),
+  Rows = c(nrow(demo_data), nrow(pheno_params), nrow(pheno_timeseries), nrow(tree_insect_fungi)),
+  Columns = c(ncol(demo_data), ncol(pheno_params), ncol(pheno_timeseries), ncol(tree_insect_fungi)),
+  Key_Variables = c(
+    "tree_species, temperature, insect_size",
+    "species, population_id, los, ndvi_max",
+    "species, year, doy, ndvi",
+    "tree_species, fungi_strain, temperature"
+  )
+)
+
+kable(data_summary, caption = "Dataset Summary") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r}
+# DIAGNÓSTICO INICIAL
+cat("=== DIAGNÓSTICO DE DATOS ===\n\n")
+
+# Verificar datasets
+datasets <- list(
+  demo_data = demo_data,
+  pheno_params = pheno_params,
+  pheno_timeseries = pheno_timeseries,
+  tree_insect_fungi = tree_insect_fungi
+)
+
+for (name in names(datasets)) {
+  cat(sprintf("\n%s: %d filas, %d columnas\n", name, 
+              nrow(datasets[[name]]), ncol(datasets[[name]])))
+  cat("Columnas:", paste(names(datasets[[name]]), collapse = ", "), "\n")
+  cat("Primeras filas:\n")
+  print(head(datasets[[name]], 2))
+}
+
+# Verificar funciones disponibles
+cat("\n=== FUNCIONES DISPONIBLES EN phenop ===\n")
+funciones_phenop <- ls("package:phenop")
+cat("Número de funciones:", length(funciones_phenop), "\n")
+cat("Primeras 20 funciones:", paste(head(funciones_phenop, 20), collapse = ", "), "\n")
+```
+
+```{r}
+# Preview each dataset
+cat("## Demo Data Preview\n")
+print(head(demo_data))
+
+cat("\n## Phenological Parameters Preview\n")
+print(head(pheno_params))
+
+cat("\n## Key Variable Distributions\n")
+summary_stats <- pheno_params %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mean_los = mean(los, na.rm = TRUE),
+    sd_los = sd(los, na.rm = TRUE),
+    mean_ndvi = mean(ndvi_max, na.rm = TRUE)
+  )
+
+print(summary_stats)
+```
+
+```{r}
+# Calculate multidimensional plasticity index
+mpi_result <- multidim_plasticity(
+  data = demo_data,
+  traits = c("insect_size", "insect_resistance", "fungus_growth", "fungus_virulence"),
+  environments = "temperature",
+  groups = "tree_species"
+)
+
+cat("## Multidimensional Plasticity Index Results\n")
+print(mpi_result$multidimensional_index)
+
+# Create a formatted table
+if (!is.null(mpi_result$multidimensional_index)) {
+  mpi_table <- as.data.frame(mpi_result$multidimensional_index)
+  kable(mpi_table, caption = "Plasticity Indices by Group") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
+}
+```
+
+```{r}
+# Network plot
+p1 <- plot_multidim_plasticity(
+  multidim_result = mpi_result,
+  type = "network",
+  plot_options = list(
+    title = "Plasticity Network",
+    node_size = 15,
+    edge_width = 2
+  )
+)
+
+# Landscape plot  
+p2 <- plot_multidim_plasticity(
+  multidim_result = mpi_result,
+  type = "landscape",
+  plot_options = list(
+    title = "Plasticity Landscape",
+    color_palette = "viridis"
+  )
+)
+
+# Combine plots
+p1 + p2 + plot_annotation(title = "Multidimensional Plasticity Visualization")
+```
+
+```{r}
+# Extract individual plasticity - CORREGIDO
+ind_plasticity <- mpi_result$individual_plasticity
+
+cat("## Estructura de ind_plasticity\n")
+str(ind_plasticity)
+
+if (!is.null(ind_plasticity)) {
+  # Convertir a formato largo para visualización
+  ind_plasticity_long <- ind_plasticity %>%
+    pivot_longer(
+      cols = -tree_species,
+      names_to = "trait",
+      values_to = "plasticity_value"
+    )
+  
+  cat("\n## Datos en formato largo:\n")
+  print(head(ind_plasticity_long))
+  
+  # Create a summary by group and trait
+  plasticity_summary <- ind_plasticity_long %>%
+    group_by(tree_species, trait) %>%
+    summarise(
+      mean_plasticity = mean(plasticity_value, na.rm = TRUE),
+      sd_plasticity = sd(plasticity_value, na.rm = TRUE),
+      n = n()
+    ) %>%
+    ungroup()
+  
+  cat("## Plasticity Summary by Species and Trait\n")
+  print(plasticity_summary)
+  
+  # Visualization 1: Boxplot por especie (combinando todos los rasgos)
+  p1 <- ggplot(ind_plasticity_long, aes(x = tree_species, y = plasticity_value, fill = tree_species)) +
+    geom_boxplot(alpha = 0.7) +
+    geom_jitter(width = 0.2, alpha = 0.5) +
+    labs(
+      title = "Plasticity Scores by Tree Species (all traits combined)",
+      x = "Tree Species",
+      y = "Plasticity Index"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_viridis_d()
+  
+  print(p1)
+  
+  # Visualization 2: Heatmap por especie y rasgo
+  p2 <- ggplot(ind_plasticity_long, aes(x = tree_species, y = trait, fill = plasticity_value)) +
+    geom_tile(color = "white") +
+    scale_fill_viridis_c(option = "C") +
+    labs(
+      title = "Plasticity Index by Tree Species and Trait",
+      x = "Tree Species",
+      y = "Trait",
+      fill = "Plasticity Index"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  print(p2)
+  
+  # Visualization 3: Gráfico de barras por rasgo
+  p3 <- ggplot(ind_plasticity_long, aes(x = trait, y = plasticity_value, fill = tree_species)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(
+      title = "Plasticity Index by Trait and Tree Species",
+      x = "Trait",
+      y = "Plasticity Index",
+      fill = "Tree Species"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_viridis_d()
+  
+  print(p3)
+} else {
+  cat("ind_plasticity es NULL\n")
+}
+```
+
+```{r}
+# Create reaction norm plot - CORREGIDO
+reaction_plot <- plot_reaction_norm(
+  data = demo_data,
+  environment = temperature,
+  trait = insect_size,
+  genotype = tree_species,
+  add_points = TRUE,
+  add_se = TRUE
+  # Eliminar line_colors ya que no existe
+)
+
+# Verificar si la función devuelve un objeto ggplot
+if (inherits(reaction_plot, "gg")) {
+  # Enhance the plot
+  reaction_plot <- reaction_plot +
+    labs(
+      title = "Reaction Norms: Insect Size Across Temperatures",
+      subtitle = "Different tree species show varying plastic responses",
+      x = "Temperature (°C)",
+      y = "Insect Size (mm)",
+      color = "Tree Species"
+    ) +
+    theme_minimal(base_size = 14) +
+    scale_color_viridis_d()
+  
+  print(reaction_plot)
+} else {
+  cat("plot_reaction_norm no devolvió un objeto ggplot. Tipo de retorno:", class(reaction_plot), "\n")
+}
+```
+
+```{r}
+hp_result <- host_pathogen_interaction(
+  data = tree_insect_fungi,
+  host_trait = "tree_health",
+  pathogen_trait = "fungus_virulence",
+  environment = "temperature",
+  host_group = "tree_species",
+  pathogen_group = "fungi_strain"
+)
+
+cat("## Host-Pathogen Interaction Results\n")
+print(hp_result)
+
+# Visualize the relationship
+if (!is.null(hp_result$interaction_data)) {
+  ggplot(hp_result$interaction_data, 
+         aes(x = tree_health, y = fungus_virulence, color = temperature)) +
+    geom_point(size = 3, alpha = 0.7) +
+    geom_smooth(method = "lm", se = FALSE) +
+    facet_wrap(~tree_species) +
+    labs(
+      title = "Host-Pathogen Interaction Patterns",
+      x = "Tree Health",
+      y = "Fungus Virulence",
+      color = "Temperature"
+    ) +
+    scale_color_gradient(low = "blue", high = "red")
+}
+```
+
+```{r}
+# Check if extended function exists - VERSIÓN CORREGIDA
+if (exists("host_pathogen_interaction_extended")) {
+  cat("## Ejecutando host_pathogen_interaction_extended...\n")
+  
+  tryCatch({
+    hp_extended <- host_pathogen_interaction_extended(
+      host_data = tree_insect_fungi,
+      pathogen_data = tree_insect_fungi,
+      host_traits = c("tree_health", "tree_defense_response"),
+      pathogen_traits = c("fungus_growth", "fungus_virulence"),
+      environments = "temperature",
+      host_group = "tree_species",
+      pathogen_group = "fungi_strain"
+    )
+    
+    cat("## Mostrando resultados disponibles...\n")
+    
+    # Crear un análisis alternativo ya que los componentes están vacíos
+    cat("\n## ANÁLISIS ALTERNATIVO DE INTERACCIÓN HUÉSPED-PATÓGENO\n")
+    
+    # Calcular correlaciones manualmente
+    interaction_corrs <- tree_insect_fungi %>%
+      group_by(tree_species, fungi_strain) %>%
+      summarise(
+        mean_tree_health = mean(tree_health, na.rm = TRUE),
+        mean_fungus_growth = mean(fungus_growth, na.rm = TRUE),
+        mean_tree_defense = mean(tree_defense_response, na.rm = TRUE),
+        mean_fungus_virulence = mean(fungus_virulence, na.rm = TRUE)
+      ) %>%
+      ungroup()
+    
+    cat("### Estadísticas descriptivas de interacciones:\n")
+    print(summary(interaction_corrs %>% select(-tree_species, -fungi_strain)))
+    
+    # Gráfico 1: Correlación entre salud del árbol y crecimiento del hongo
+    p1 <- ggplot(interaction_corrs, aes(x = mean_tree_health, y = mean_fungus_growth)) +
+      geom_point(aes(color = tree_species, shape = fungi_strain), size = 4, alpha = 0.7) +
+      geom_smooth(method = "lm", se = TRUE, color = "blue") +
+      labs(
+        title = "Interacción: Salud del Árbol vs Crecimiento del Hongo",
+        x = "Salud del Árbol (promedio)",
+        y = "Crecimiento del Hongo (promedio)",
+        color = "Especie de Árbol",
+        shape = "Cepa de Hongo"
+      ) +
+      theme_minimal() +
+      theme(legend.position = "right")
+    
+    print(p1)
+    
+    # Gráfico 2: Correlación entre defensa del árbol y virulencia del hongo
+    p2 <- ggplot(interaction_corrs, aes(x = mean_tree_defense, y = mean_fungus_virulence)) +
+      geom_point(aes(color = tree_species, shape = fungi_strain), size = 4, alpha = 0.7) +
+      geom_smooth(method = "lm", se = TRUE, color = "red") +
+      labs(
+        title = "Interacción: Defensa del Árbol vs Virulencia del Hongo",
+        x = "Respuesta de Defensa del Árbol (promedio)",
+        y = "Virulencia del Hongo (promedio)",
+        color = "Especie de Árbol",
+        shape = "Cepa de Hongo"
+      ) +
+      theme_minimal() +
+      theme(legend.position = "right")
+    
+    print(p2)
+    
+    # Tabla de correlaciones calculadas
+    correlation_matrix <- cor(
+      interaction_corrs %>% select(mean_tree_health, mean_fungus_growth, 
+                                   mean_tree_defense, mean_fungus_virulence),
+      use = "complete.obs"
+    )
+    
+    cat("\n### Matriz de Correlación Calculada:\n")
+    print(correlation_matrix)
+    
+  }, error = function(e) {
+    cat("Error en host_pathogen_interaction_extended:", e$message, "\n")
+  })
+} else {
+  cat("## La función host_pathogen_interaction_extended NO existe\n")
+}
+```
+
+```{r}
+trends <- analyze_temporal_trends(pheno_params)
+
+cat("## Temporal Trend Analysis\n")
+cat("Estructura de trends:\n")
+str(trends)
+
+# Si trends es un data frame, mostramos las primeras filas
+if (is.data.frame(trends)) {
+  cat("Primeras filas de trends:\n")
+  print(head(trends, 10))
+  
+  # Identificar columnas numéricas que podrían representar la pendiente
+  numeric_cols <- names(trends)[sapply(trends, is.numeric)]
+  cat("Columnas numéricas en trends:", paste(numeric_cols, collapse = ", "), "\n")
+  
+  # Si hay una columna llamada 'slope' o similar, la usamos
+  slope_col <- NULL
+  if ("slope" %in% names(trends)) {
+    slope_col <- "slope"
+  } else if (any(grepl("slope", names(trends), ignore.case = TRUE))) {
+    slope_col <- names(trends)[grepl("slope", names(trends), ignore.case = TRUE)][1]
+  } else if (length(numeric_cols) > 0) {
+    # Tomamos la primera columna numérica que no sea año o similar
+    exclude <- c("year", "sos", "eos", "los", "ndvi_max", "gpp_total", "mean_temperature", "total_precipitation")
+    slope_col <- setdiff(numeric_cols, exclude)[1]
+  }
+  
+  if (!is.null(slope_col)) {
+    cat("Usando la columna", slope_col, "como pendiente.\n")
+    
+    # Renombrar la columna a 'slope' para facilitar
+    trends <- trends %>% rename(slope = !!sym(slope_col))
+    
+    # Visualize trends
+    if (!is.null(trends) && nrow(trends) > 0) {
+      # Select top trends for visualization
+      top_trends <- trends %>%
+        filter(abs(slope) > quantile(abs(slope), 0.75, na.rm = TRUE)) %>%
+        head(10)
+      
+      if (nrow(top_trends) > 0) {
+        p <- ggplot(top_trends, aes(x = reorder(species, slope), y = slope, fill = slope > 0)) +
+          geom_col() +
+          coord_flip() +
+          labs(
+            title = "Strongest Phenological Trends",
+            x = "Species",
+            y = "Trend Slope",
+            fill = "Direction"
+          ) +
+          scale_fill_manual(values = c("FALSE" = "red", "TRUE" = "blue"))
+        
+        print(p)
+      } else {
+        cat("No se encontraron tendencias fuertes.\n")
+      }
+    }
+  } else {
+    cat("No se pudo encontrar una columna de pendiente en trends.\n")
+  }
+} else {
+  cat("trends no es un data frame. Tipo:", class(trends), "\n")
+}
+```
+
+```{r}
+cat("## Ejecutando analyze_correlations...\n")
+corr_result <- analyze_correlations(pheno_params)
+
+if (!is.null(corr_result)) {
+  
+  # Mostrar las correlaciones principales
+  cat("### Top 10 correlaciones:\n")
+  if ("top_correlations" %in% names(corr_result)) {
+    top_corr_table <- corr_result$top_correlations %>%
+      mutate(
+        Correlation = round(Freq, 3),
+        Significance = ifelse(abs(Freq) > 0.6, "***", 
+                              ifelse(abs(Freq) > 0.4, "**",
+                                     ifelse(abs(Freq) > 0.2, "*", "")))
+      ) %>%
+      select(Var1, Var2, Correlation, Significance)
+    
+    print(top_corr_table)
+  }
+  
+  # Crear y MOSTRAR el heatmap
+  if ("plot_data" %in% names(corr_result)) {
+    # Crear el heatmap
+    heatmap_plot <- ggplot(corr_result$plot_data, 
+                           aes(x = Var1, y = Var2, fill = Freq)) +
+      geom_tile(color = "white", linewidth = 0.5) +
+      geom_text(aes(label = ifelse(Var1 == Var2, "", 
+                                   sprintf("%.2f", Freq))), 
+                color = "black", size = 3.5) +
+      scale_fill_gradient2(
+        low = "#2E86AB",    # Azul para negativas
+        mid = "#F6F5AE",    # Amarillo claro para cero
+        high = "#A23B72",   # Rojo para positivas
+        midpoint = 0,
+        limit = c(-1, 1),
+        name = "Correlación"
+      ) +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        plot.title = element_text(face = "bold", hjust = 0.5)
+      ) +
+      labs(
+        title = "Matriz de Correlación - Parámetros Fenológicos",
+        subtitle = "Los valores muestran coeficientes de correlación de Pearson"
+      ) +
+      coord_fixed(ratio = 1)
+    
+    # IMPRIMIR el gráfico
+    print(heatmap_plot)
+    
+    # Agregar interpretación
+    cat("\n### Interpretación de correlaciones:\n")
+    cat("- Valores cercanos a +1: fuerte correlación positiva\n")
+    cat("- Valores cercanos a -1: fuerte correlación negativa\n")
+    cat("- Valores cercanos a 0: poca o ninguna correlación\n")
+    
+  } else if ("matrix" %in% names(corr_result)) {
+    # Si solo hay matriz, crear heatmap desde ella
+    corr_matrix <- corr_result$matrix
+    
+    # Convertir a formato largo
+    corr_melt <- as.data.frame(as.table(corr_matrix))
+    names(corr_melt) <- c("Var1", "Var2", "Freq")
+    
+    heatmap_plot <- ggplot(corr_melt, aes(x = Var1, y = Var2, fill = Freq)) +
+      geom_tile(color = "white") +
+      geom_text(aes(label = ifelse(Var1 == Var2, "", 
+                                   sprintf("%.2f", Freq))), 
+                size = 3) +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                          midpoint = 0, limit = c(-1, 1)) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(title = "Matriz de Correlación") +
+      coord_fixed()
+    
+    print(heatmap_plot)
+  }
+} else {
+  cat("## analyze_correlations devolvió NULL\n")
+}
+```
+
+
+```{r}
+# Prepare subset for seasonal curves
+pheno_subset <- pheno_timeseries %>%
+  filter(year == 2021) %>%
+  group_by(species) %>%
+  slice_head(n = 100) %>%  # Limit for clarity
+  ungroup()
+
+if (exists("plot_seasonal_curves")) {
+  seasonal_plot <- plot_seasonal_curves(
+    time_series = pheno_subset,
+    selected_species = unique(pheno_subset$species)[1:5],
+    selected_year = 2021,
+    n_populations = 2
+  )
+  
+  print(seasonal_plot)
+}
+```
+
+```{r}
+cat("\n", "=", 70, "\n", sep = "")
+cat("CREATING MULTIPLE HEATMAPS\n")
+cat("=", 70, "\n\n")
+
+# Define parameters to plot (check existence)
+params_to_plot <- c()
+if ("los" %in% names(pheno_params)) params_to_plot <- c(params_to_plot, "los")
+if ("sos" %in% names(pheno_params)) params_to_plot <- c(params_to_plot, "sos")
+if ("eos" %in% names(pheno_params)) params_to_plot <- c(params_to_plot, "eos")
+if ("ndvi_max" %in% names(pheno_params)) params_to_plot <- c(params_to_plot, "ndvi_max")
+
+cat("Parameters to plot:", paste(params_to_plot, collapse = ", "), "\n\n")
+
+# Create and save each heatmap individually
+for (i in seq_along(params_to_plot)) {
+  param <- params_to_plot[i]
+  cat(sprintf("%d. Creating heatmap for %s...\n", i, param))
+  
+  tryCatch({
+    heatmap_plot <- plot_parameter_heatmap(
+      pheno_params,
+      parameter = param,
+      title = paste(toupper(param), "Heatmap")
+    )
+    
+    # Save individually
+    filename <- paste0("heatmap_", param, ".png")
+    ggplot2::ggsave(filename, heatmap_plot, width = 10, height = 8, dpi = 300)
+    cat("   ✓ Saved as", filename, "\n")
+    
+    # Display in RStudio
+    print(heatmap_plot)
+    
+  }, error = function(e) {
+    cat("   ✗ Failed:", e$message, "\n")
+  })
+}
+
+cat("\n✓ Process completed\n")
+```
+
+```{r}
+if (exists("plot_density_ridges")) {
+  density_plot <- plot_density_ridges(
+    parameters = pheno_params,
+    parameter = "los",
+    group_by = "species",
+    title = "Length of Season Distribution by Species"
+  )
+  
+  print(density_plot)
+}
+```
+
+```{r}
+# 9. Análisis Espacial y Mapas Fenológicos
+cat("# 9. Análisis Espacial y Mapas Fenológicos\n\n")
+
+# Cargar datos espaciales - VERSIÓN CORREGIDA PARA TSV
+if (file.exists("pheno_spatial_synthetic.csv")) {
+  
+  # El archivo tiene formato TSV (separado por tabulaciones), no CSV
+  cat("## Leyendo archivo TSV (separado por tabulaciones)...\n")
+  
+  # Leer con separador de tabulación
+  spatial_data <- read.delim("pheno_spatial_synthetic.csv", 
+                             sep = "\t",  # Separador de tabulación
+                             header = TRUE,
+                             stringsAsFactors = FALSE,
+                             check.names = FALSE)  # Mantener nombres originales
+  
+  cat("## Datos Espaciales Cargados Exitosamente\n")
+  cat("## Dimensiones:", dim(spatial_data), "\n")
+  cat("## Nombres de columnas:\n")
+  print(names(spatial_data))
+  cat("\n## Primeras filas (primeras 6 columnas):\n")
+  print(head(spatial_data[, 1:min(6, ncol(spatial_data))], 3))
+  
+  # Verificar que tenemos las columnas necesarias
+  # Basado en la salida, parece que los nombres están correctos
+  
+  # 9.1. Mapa básico de ubicaciones
+  cat("\n## 9.1. Mapa de Ubicaciones de Sitios\n")
+  
+  # Verificar que tenemos coordenadas
+  if ("latitude" %in% names(spatial_data) && "longitude" %in% names(spatial_data)) {
+    
+    # Convertir a numérico
+    spatial_data$latitude <- as.numeric(spatial_data$latitude)
+    spatial_data$longitude <- as.numeric(spatial_data$longitude)
+    
+    # Filtrar coordenadas válidas
+    spatial_data <- spatial_data %>%
+      filter(!is.na(latitude), !is.na(longitude),
+             latitude >= -90, latitude <= 90,
+             longitude >= -180, longitude <= 180)
+    
+    if (nrow(spatial_data) > 0) {
+      
+      # Determinar variable para color
+      if ("forest_type" %in% names(spatial_data)) {
+        color_var <- spatial_data$forest_type
+        color_label <- "Tipo de Bosque"
+        is_categorical <- TRUE
+      } else if ("phenology_class" %in% names(spatial_data)) {
+        color_var <- spatial_data$phenology_class
+        color_label <- "Clase Fenológica"
+        is_categorical <- TRUE
+      } else {
+        color_var <- "Sitios"
+        color_label <- "Sitios"
+        is_categorical <- TRUE
+      }
+      
+      # Determinar variable para tamaño
+      if ("los" %in% names(spatial_data)) {
+        size_var <- as.numeric(spatial_data$los)
+        size_label <- "Longitud de Estación (días)"
+        has_size <- TRUE
+      } else if ("elevation" %in% names(spatial_data)) {
+        size_var <- as.numeric(spatial_data$elevation)
+        size_label <- "Elevación (m)"
+        has_size <- TRUE
+      } else if ("productivity" %in% names(spatial_data)) {
+        size_var <- as.numeric(spatial_data$productivity)
+        size_label <- "Productividad"
+        has_size <- TRUE
+      } else {
+        size_var <- 3
+        size_label <- ""
+        has_size <- FALSE
+      }
+      
+      # Crear mapa base
+      library(maps)
+      
+      p1 <- ggplot(spatial_data, aes(x = longitude, y = latitude)) +
+        borders("world", colour = "gray70", fill = "gray95", size = 0.3) +
+        coord_quickmap() +
+        labs(
+          title = "Distribución Espacial de Sitios de Monitoreo Fenológico",
+          subtitle = paste("Total de sitios:", nrow(spatial_data)),
+          x = "Longitud",
+          y = "Latitud"
+        ) +
+        theme_minimal(base_size = 12) +
+        theme(
+          plot.title = element_text(face = "bold", hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5)
+        )
+      
+      # Añadir puntos según el tipo de variable de color
+      if (is_categorical) {
+        # Variable categórica
+        p1 <- p1 +
+          geom_point(aes(color = color_var, size = size_var), 
+                    alpha = 0.7, shape = 16) +
+          scale_color_viridis_d(
+            name = color_label,
+            option = "D"
+          )
+      } else {
+        # Variable numérica
+        p1 <- p1 +
+          geom_point(aes(color = color_var, size = size_var), 
+                    alpha = 0.7, shape = 16) +
+          scale_color_viridis_c(
+            name = color_label,
+            option = "C"
+          )
+      }
+      
+      # Añadir escala de tamaño si es relevante
+      if (has_size) {
+        p1 <- p1 +
+          scale_size_continuous(
+            name = size_label,
+            range = c(3, 8),
+            breaks = pretty(range(size_var, na.rm = TRUE), n = 4)
+          )
+      } else {
+        p1 <- p1 + scale_size_identity()
+      }
+      
+      # Añadir etiquetas si hay pocos puntos
+      if (nrow(spatial_data) <= 20 && "site_name" %in% names(spatial_data)) {
+        p1 <- p1 +
+          geom_text(aes(label = site_name), 
+                   vjust = -0.8, size = 2.5, color = "black", alpha = 0.7)
+      }
+      
+      print(p1)
+      
+      # 9.2. Mapa de calor para variables continuas
+      cat("\n## 9.2. Mapa de Calor para Variables Continuas\n")
+      
+      # Lista de variables numéricas para visualizar
+      numeric_vars <- c()
+      if ("los" %in% names(spatial_data)) numeric_vars <- c(numeric_vars, "los")
+      if ("ndvi_max" %in% names(spatial_data)) numeric_vars <- c(numeric_vars, "ndvi_max")
+      if ("productivity" %in% names(spatial_data)) numeric_vars <- c(numeric_vars, "productivity")
+      if ("elevation" %in% names(spatial_data)) numeric_vars <- c(numeric_vars, "elevation")
+      if ("mean_annual_temp" %in% names(spatial_data)) numeric_vars <- c(numeric_vars, "mean_annual_temp")
+      
+      if (length(numeric_vars) > 0) {
+        # Seleccionar la primera variable numérica disponible
+        map_var <- numeric_vars[1]
+        map_label <- switch(map_var,
+                           "los" = "Longitud de Estación (días)",
+                           "ndvi_max" = "NDVI Máximo",
+                           "productivity" = "Productividad",
+                           "elevation" = "Elevación (m)",
+                           "mean_annual_temp" = "Temperatura Media Anual (°C)",
+                           map_var)
+        
+        p2 <- ggplot(spatial_data, aes(x = longitude, y = latitude)) +
+          borders("world", colour = "gray70", fill = "gray95", size = 0.3) +
+          geom_point(aes(color = as.numeric(.data[[map_var]])), 
+                    size = 5, alpha = 0.8) +
+          scale_color_viridis_c(
+            option = "B",
+            name = map_label
+          ) +
+          coord_quickmap() +
+          labs(
+            title = paste("Distribución de", map_label),
+            subtitle = "Color indica valor de la variable",
+            x = "Longitud",
+            y = "Latitud"
+          ) +
+          theme_minimal() +
+          theme(
+            plot.title = element_text(face = "bold", hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5)
+          )
+        
+        print(p2)
+        
+        # Crear mapa interpolado si hay suficientes puntos
+        if (nrow(spatial_data) >= 5 && requireNamespace("akima", quietly = TRUE)) {
+          cat("\n## 9.3. Mapa Interpolado\n")
+          
+          tryCatch({
+            library(akima)
+            
+            # Preparar datos para interpolación
+            interp_data <- spatial_data %>%
+              filter(!is.na(.data[[map_var]]), 
+                     !is.na(longitude), 
+                     !is.na(latitude)) %>%
+              select(longitude, latitude, value = .data[[map_var]])
+            
+            if (nrow(interp_data) >= 4) {
+              # Crear grid para interpolación
+              lon_range <- range(interp_data$longitude, na.rm = TRUE)
+              lat_range <- range(interp_data$latitude, na.rm = TRUE)
+              
+              lon_seq <- seq(lon_range[1], lon_range[2], length.out = 40)
+              lat_seq <- seq(lat_range[1], lat_range[2], length.out = 40)
+              
+              # Interpolación
+              interp_result <- interp(
+                x = interp_data$longitude,
+                y = interp_data$latitude,
+                z = interp_data$value,
+                xo = lon_seq,
+                yo = lat_seq,
+                linear = TRUE,
+                extrap = FALSE
+              )
+              
+              # Convertir a data frame
+              interp_df <- expand.grid(
+                longitude = interp_result$x,
+                latitude = interp_result$y
+              )
+              interp_df$value <- as.vector(interp_result$z)
+              
+              p3 <- ggplot() +
+                borders("world", colour = "gray70", fill = "gray95", size = 0.3) +
+                geom_tile(data = interp_df, 
+                         aes(x = longitude, y = latitude, fill = value),
+                         alpha = 0.7) +
+                geom_point(data = spatial_data, 
+                          aes(x = longitude, y = latitude),
+                          size = 2, color = "black", shape = 1) +
+                geom_contour(data = interp_df,
+                            aes(x = longitude, y = latitude, z = value),
+                            color = "white", alpha = 0.5, bins = 8) +
+                scale_fill_viridis_c(
+                  option = "B",
+                  name = map_label
+                ) +
+                coord_quickmap() +
+                labs(
+                  title = paste("Mapa Interpolado de", map_label),
+                  subtitle = "Isolíneas muestran valores similares",
+                  x = "Longitud",
+                  y = "Latitud"
+                ) +
+                theme_minimal() +
+                theme(
+                  plot.title = element_text(face = "bold", hjust = 0.5),
+                  plot.subtitle = element_text(hjust = 0.5)
+                )
+              
+              print(p3)
+            }
+          }, error = function(e) {
+            cat("Interpolación no disponible:", e$message, "\n")
+          })
+        }
+      }
+      
+      # 9.4. Mapas por categoría
+      cat("\n## 9.4. Mapas por Categoría\n")
+      
+      # Encontrar variables categóricas
+      categorical_vars <- c()
+      if ("forest_type" %in% names(spatial_data)) categorical_vars <- c(categorical_vars, "forest_type")
+      if ("land_cover" %in% names(spatial_data)) categorical_vars <- c(categorical_vars, "land_cover")
+      if ("climate_zone" %in% names(spatial_data)) categorical_vars <- c(categorical_vars, "climate_zone")
+      if ("phenology_class" %in% names(spatial_data)) categorical_vars <- c(categorical_vars, "phenology_class")
+      
+      if (length(categorical_vars) > 0) {
+        cat_var <- categorical_vars[1]
+        cat_label <- switch(cat_var,
+                           "forest_type" = "Tipo de Bosque",
+                           "land_cover" = "Cobertura del Suelo",
+                           "climate_zone" = "Zona Climática",
+                           "phenology_class" = "Clase Fenológica",
+                           cat_var)
+        
+        # Contar categorías para determinar layout
+        n_categories <- length(unique(spatial_data[[cat_var]]))
+        n_cols <- ifelse(n_categories <= 4, 2, 3)
+        
+        p4 <- ggplot(spatial_data, aes(x = longitude, y = latitude)) +
+          borders("world", colour = "gray70", fill = "gray95", size = 0.3) +
+          geom_point(aes(color = if ("los" %in% names(spatial_data)) as.numeric(los) else 1,
+                         size = if ("productivity" %in% names(spatial_data)) as.numeric(productivity) else 3), 
+                    alpha = 0.7) +
+          facet_wrap(as.formula(paste("~", cat_var)), 
+                    ncol = n_cols,
+                    scales = "fixed") +
+          scale_color_viridis_c(
+            option = "A",
+            name = ifelse("los" %in% names(spatial_data), "LOS (días)", "Valor")
+          ) +
+          coord_quickmap() +
+          labs(
+            title = paste("Distribución Espacial por", cat_label),
+            x = "Longitud",
+            y = "Latitud"
+          ) +
+          theme_minimal() +
+          theme(
+            plot.title = element_text(face = "bold", hjust = 0.5),
+            strip.text = element_text(face = "bold", size = 10),
+            strip.background = element_rect(fill = "gray90", color = "gray70")
+          )
+        
+        if ("productivity" %in% names(spatial_data)) {
+          p4 <- p4 + 
+            scale_size_continuous(name = "Productividad", range = c(2, 6))
+        } else {
+          p4 <- p4 + scale_size_identity()
+        }
+        
+        print(p4)
+      }
+      
+      # 9.5. Análisis de correlaciones espaciales
+      cat("\n## 9.5. Análisis de Correlaciones Espaciales\n")
+      
+      # Crear lista de variables numéricas para análisis
+      analysis_vars <- c()
+      if ("los" %in% names(spatial_data)) analysis_vars <- c(analysis_vars, "los")
+      if ("ndvi_max" %in% names(spatial_data)) analysis_vars <- c(analysis_vars, "ndvi_max")
+      if ("productivity" %in% names(spatial_data)) analysis_vars <- c(analysis_vars, "productivity")
+      if ("elevation" %in% names(spatial_data)) analysis_vars <- c(analysis_vars, "elevation")
+      if ("mean_annual_temp" %in% names(spatial_data)) analysis_vars <- c(analysis_vars, "mean_annual_temp")
+      
+      if (length(analysis_vars) >= 2) {
+        # Calcular matriz de correlación
+        numeric_data <- spatial_data[, analysis_vars]
+        
+        # Convertir todas a numérico
+        numeric_data <- as.data.frame(lapply(numeric_data, as.numeric))
+        
+        cor_matrix <- cor(numeric_data, use = "complete.obs")
+        
+        cat("### Matriz de Correlación:\n")
+        print(cor_matrix)
+        
+        # Visualizar correlaciones
+        cor_melt <- as.data.frame(as.table(cor_matrix))
+        names(cor_melt) <- c("Var1", "Var2", "Correlation")
+        
+        p5 <- ggplot(cor_melt, aes(x = Var1, y = Var2, fill = Correlation)) +
+          geom_tile(color = "white", size = 1) +
+          geom_text(aes(label = sprintf("%.2f", Correlation)), 
+                   color = ifelse(abs(cor_melt$Correlation) > 0.7, "white", "black"), 
+                   size = 4) +
+          scale_fill_gradient2(
+            low = "#2E86AB",  # Azul para negativas
+            mid = "#F6F5AE",  # Amarillo para cero
+            high = "#A23B72", # Rojo para positivas
+            midpoint = 0,
+            limits = c(-1, 1),
+            name = "Correlación"
+          ) +
+          labs(
+            title = "Correlaciones entre Variables Espaciales",
+            x = "",
+            y = ""
+          ) +
+          theme_minimal() +
+          theme(
+            plot.title = element_text(face = "bold", hjust = 0.5),
+            axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+            axis.text.y = element_text(size = 10),
+            panel.grid = element_blank()
+          ) +
+          coord_fixed()
+        
+        print(p5)
+      }
+      
+      # 9.6. Gráficos de relación con latitud
+      cat("\n## 9.6. Relaciones con Latitud\n")
+      
+      if (length(analysis_vars) > 0) {
+        for (var in analysis_vars) {
+          if (var %in% names(spatial_data)) {
+            p <- ggplot(spatial_data, aes(x = latitude, y = as.numeric(.data[[var]]))) +
+              geom_point(aes(color = longitude), size = 3, alpha = 0.7) +
+              geom_smooth(method = "lm", se = TRUE, color = "red", alpha = 0.2) +
+              scale_color_viridis_c(name = "Longitud") +
+              labs(
+                title = paste("Relación entre Latitud y", var),
+                x = "Latitud (grados)",
+                y = var
+              ) +
+              theme_minimal() +
+              theme(plot.title = element_text(face = "bold", hjust = 0.5))
+            
+            print(p)
+            
+            # Calcular correlación
+            cor_test <- cor.test(spatial_data$latitude, 
+                                as.numeric(spatial_data[[var]]), 
+                                use = "complete.obs")
+            cat(sprintf("- Correlación latitud-%s: r = %.3f (p = %.4f)\n", 
+                       var, cor_test$estimate, cor_test$p.value))
+          }
+        }
+      }
+      
+      # 9.7. Resumen estadístico
+      cat("\n## 9.7. Resumen Estadístico Espacial\n")
+      
+      cat("### Estadísticas de coordenadas:\n")
+      cat(sprintf("- Rango de latitud: %.2f a %.2f grados\n", 
+                 min(spatial_data$latitude), max(spatial_data$latitude)))
+      cat(sprintf("- Rango de longitud: %.2f a %.2f grados\n", 
+                 min(spatial_data$longitude), max(spatial_data$longitude)))
+      cat(sprintf("- Número de sitios: %d\n", nrow(spatial_data)))
+      
+      if ("elevation" %in% names(spatial_data)) {
+        cat(sprintf("- Rango de elevación: %.0f a %.0f m\n", 
+                   min(as.numeric(spatial_data$elevation), na.rm = TRUE),
+                   max(as.numeric(spatial_data$elevation), na.rm = TRUE)))
+      }
+      
+      # Información por categoría si existe
+      if (length(categorical_vars) > 0) {
+        cat("\n### Distribución por categoría:\n")
+        for (cat_var in categorical_vars) {
+          if (cat_var %in% names(spatial_data)) {
+            cat_table <- table(spatial_data[[cat_var]])
+            if (length(cat_table) <= 10) {  # Solo mostrar si hay pocas categorías
+              cat(paste("\n- Por", cat_var, ":\n"))
+              print(cat_table)
+            }
+          }
+        }
+      }
+      
+    } else {
+      cat("## No hay datos con coordenadas válidas después del filtrado.\n")
+    }
+    
+  } else {
+    cat("## No se encontraron columnas 'latitude' y 'longitude' en los datos.\n")
+    cat("## Columnas disponibles:", paste(names(spatial_data), collapse = ", "), "\n")
+  }
+  
+} else {
+  cat("## Archivo pheno_spatial_synthetic.csv no encontrado.\n")
+}
+```
+
+```{r}
+# Simulate plasticity data for testing
+if (exists("simulate_plasticity_data")) {
+  sim_data <- simulate_plasticity_data(
+    n_genotypes = 5,
+    n_environments = 3,
+    n_traits = 4,
+    plasticity_patterns = c("gradient", "gradient", "threshold", "optimal")
+  )
+  
+  cat("## Simulated Data Structure\n")
+  if (!is.null(sim_data)) {
+    cat("Dimensions:", dim(sim_data), "\n")
+    cat("Variables:", paste(names(sim_data), collapse = ", "), "\n")
+    
+    # Quick visualization of simulated patterns
+    if ("environment" %in% names(sim_data) && "trait1" %in% names(sim_data)) {
+      ggplot(sim_data, aes(x = environment, y = trait1, group = genotype, color = genotype)) +
+        geom_line(size = 1) +
+        geom_point(size = 2) +
+        labs(
+          title = "Simulated Plasticity Patterns",
+          x = "Environment",
+          y = "Trait Value"
+        ) +
+        theme_minimal()
+    }
+  }
+}
+```
+
+```{r}
+cat("## Package Summary\n")
+cat("The phenop package provides comprehensive tools for:\n\n")
+
+cat("1. **Multidimensional Plasticity Analysis**\n")
+cat("   - Calculate MPI indices\n")
+cat("   - Visualize plasticity networks\n")
+cat("   - Analyze individual plasticity\n\n")
+
+cat("2. **Reaction Norm Analysis**\n")
+cat("   - Plot genotype × environment interactions\n")
+cat("   - Calculate reaction norm slopes\n\n")
+
+cat("3. **Host-Pathogen Interactions**\n")
+cat("   - Analyze co-evolutionary dynamics\n")
+cat("   - Detect interaction patterns\n\n")
+
+cat("4. **Phenological Analysis**\n")
+cat("   - Detect temporal trends\n")
+cat("   - Analyze correlations\n")
+cat("   - Seasonal pattern visualization\n\n")
+
+cat("5. **Advanced Visualizations**\n")
+cat("   - Heatmaps, networks, and landscapes\n")
+cat("   - Seasonal curves and density plots\n\n")
+
+cat("6. **Statistical Analysis**\n")
+cat("   - Trade-off detection\n")
+cat("   - Environmental optimization\n")
+cat("   - PCA and anomaly detection\n\n")
+
+cat("## Recommended Workflow\n")
+cat("1. Start with `multidim_plasticity()` for initial assessment\n")
+cat("2. Use `plot_reaction_norm()` to visualize G×E interactions\n")
+cat("3. Apply `analyze_temporal_trends()` for phenological data\n")
+cat("4. Check for trade-offs with `plasticity_tradeoffs_extended()`\n")
+cat("5. Use `run_complete_analysis()` for comprehensive pipeline\n")
+```

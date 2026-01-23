@@ -2,25 +2,48 @@
 % Please edit documentation in R/multidim_plasticity.R
 \name{multidim_plasticity}
 \alias{multidim_plasticity}
-\title{Multidimensional Plasticity Index (MPI)}
+\title{Calculate Multidimensional Plasticity Index (MPI)}
 \usage{
-multidim_plasticity(data, traits, environments, groups, weights = NULL)
+multidim_plasticity(
+  data,
+  traits,
+  environments,
+  groups,
+  weights = NULL,
+  na.action = "omit",
+  min_variation = 0.01,
+  ...
+)
 }
 \arguments{
-\item{data}{Data frame with the data}
+\item{data}{A data frame containing the phenotypic data}
 
-\item{traits}{Vector of traits to analyze}
+\item{traits}{Character vector of trait column names}
 
-\item{environments}{Environmental variables}
+\item{environments}{Character string of environment column name}
 
-\item{groups}{Grouping variable(genotypes/populations)}
+\item{groups}{Character string of group/genotype column name}
 
-\item{weights}{Optional: ecological importance weights for each trait}
+\item{weights}{Optional numeric vector of weights for each trait}
+
+\item{na.action}{How to handle NAs ("omit", "fail", "warning")}
+
+\item{min_variation}{Minimum variation threshold (default 0.01)}
+
+\item{...}{Additional arguments passed to internal functions}
 }
 \value{
-List with multidimensional plasticity metrics
+A list with multidimensional_index and individual_plasticity
 }
 \description{
-Calculates an original index that integrates plasticity across multiple traits
-considering their correlations and ecological importance.
+Calculate Multidimensional Plasticity Index (MPI)
+}
+\examples{
+data(demo_data)
+result <- multidim_plasticity(
+  data = demo_data,
+  traits = c("insect_size", "resistance"),
+  environments = "temperature",
+  groups = "insect_population"
+)
 }

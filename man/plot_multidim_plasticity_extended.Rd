@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_multidim_plasticity_extended.R
 \name{plot_multidim_plasticity_extended}
 \alias{plot_multidim_plasticity_extended}
-\title{Extended Multidimensional Plasticity Visualization}
+\title{Extended Multidimensional Plasticity Visualization (SAFE)}
 \usage{
 plot_multidim_plasticity_extended(
   multidim_result,
@@ -15,20 +15,23 @@ plot_multidim_plasticity_extended(
 \arguments{
 \item{multidim_result}{Result object from multidim_plasticity() or safe_multidim_plasticity()}
 
-\item{type}{Type of plot to create. Options:
-"heatmap" (default), "network", "radar", "bar", "scatter",
-"violin", "density", "pca", "landscape", "integration"}
+\item{type}{Type of plot to create. Options: "heatmap" (default), "network", "radar", "bar",
+"scatter", "violin", "density", "pca", "landscape", "integration"}
 
 \item{traits}{Optional character vector of traits to include (subset of all traits)}
 
 \item{plot_options}{List of additional plotting options:
-- title: Plot title
-- color_palette: Color palette name ("viridis", "plasma", "magma", "inferno", "cividis")
-- theme: ggplot2 theme ("minimal", "classic", "bw", "dark", "light")
-- interactive: Logical, whether to create interactive plot (requires plotly)
-- save_plot: Logical, whether to save plot to file
-- filename: Filename for saved plot
-- width, height: Plot dimensions in inches}
+\itemize{
+\item title: Plot title
+\item color_palette: Color palette name ("viridis", "plasma", "magma", "inferno", "cividis")
+\item theme: ggplot2 theme ("minimal", "classic", "bw", "dark", "light")
+\item interactive: Logical, whether to create interactive plot (requires plotly)
+\item save_plot: Logical, whether to save plot to file
+\item filename: Filename for saved plot
+\item width, height: Plot dimensions in inches
+\item alpha: transparency
+\item point_size, text_size, legend_position
+}}
 
 \item{...}{Additional arguments passed to plotting functions}
 }
@@ -37,36 +40,5 @@ A ggplot object (or plotly object if interactive = TRUE)
 }
 \description{
 Advanced plotting functions for visualizing multidimensional plasticity results.
-This function creates various plot types including heatmaps, networks,
-radar plots, and more, with extensive customization options.
-}
-\examples{
-data(demo_data)
-
-# Run plasticity analysis
-insect_data <- demo_data \%>\%
-  dplyr::select(insect_population, temperature, humidity,
-                insect_size, resistance) \%>\%
-  dplyr::distinct()
-  
-result <- safe_multidim_plasticity(
-  insect_data,
-  traits = c("insect_size", "resistance"),
-  environments = c("temperature", "humidity"),
-  groups = "insect_population"
-)
-
-# Create different types of plots
-heatmap_plot <- plot_multidim_plasticity_extended(
-  result,
-  type = "heatmap",
-  plot_options = list(title = "Plasticity Heatmap", color_palette = "viridis")
-)
-
-bar_plot <- plot_multidim_plasticity_extended(
-  result,
-  type = "bar",
-  plot_options = list(title = "Average Plasticity by Trait")
-)
-
+Always returns a ggplot object, even if data are missing or incomplete.
 }

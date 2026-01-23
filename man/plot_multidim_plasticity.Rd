@@ -28,9 +28,14 @@ Creates innovative visualizations for multidimensional plasticity analysis
 including correlation networks, plasticity landscapes, and trait integration plots.
 }
 \examples{
-result <- multidim_plasticity(fungi_insect_data,
-                             c("fungus_growth", "virulence", "insect_size"),
-                             c("temperature", "humidity"),
-                             "fungus_strain")
+# Usar demo_data en lugar de fungi_insect_data
+data(demo_data)
+# Preparar datos para multidim_plasticity
+result <- safe_multidim_plasticity(
+  demo_data,
+  traits = c("insect_size", "resistance"),
+  environments = c("temperature", "humidity"),
+  groups = "insect_population"
+)
 plot_multidim_plasticity(result, "network")
 }

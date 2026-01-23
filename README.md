@@ -1,312 +1,518 @@
-# phenop: Multidimensional Phenotypic Plasticity Analysis
+phenop: Multidimensional Analysis of Phenotypic Plasticity
 
-<img src="man/figures/logo.png" align="right" height="139" alt="phenop logo" />
+https://img.shields.io/badge/R-%253E%253D%25204.0.0-blue
 
-[![R-CMD-check](https://github.com/yourusername/phenop/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/yourusername/phenop/actions/workflows/R-CMD-check.yaml)
-![tests](https://img.shields.io/badge/tests-90%20passed%2C%200%20failed-brightgreen)
-![coverage](https://img.shields.io/badge/coverage-17.28%25-yellow)
+https://img.shields.io/badge/license-MIT-green
 
-An R package for analyzing phenotypic plasticity, genotype-environment interactions (G×E), and multidimensional adaptation patterns in evolutionary biology and ecology studies.
+https://img.shields.io/badge/status-active-success
 
-## Installation
+https://img.shields.io/github/issues/leonelstazione/phenop
 
-```r
-# Install from GitHub
-devtools::install_github("leonelstazione/phenop")
+https://img.shields.io/github/stars/leonelstazione/phenop
 
-# Load the package
-library(phenop)
+<!-- Add when you have CI setup: --><!-- \[!\[R-CMD-check](https://github.com/leonelstazione/phenop/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/leonelstazione/phenop/actions/workflows/R-CMD-check.yaml) -->
+
+Overview
+
+phenop is an R package providing novel methods for analyzing phenotypic plasticity across multiple traits and environmental variables, with special focus on insect-fungus host-pathogen systems. It implements original multidimensional plasticity indices and interaction analyses not available in other packages.
+
+The package bridges the gap between ecological, evolutionary, and phenotypic studies by offering comprehensive tools for plasticity analysis in eco-evolutionary contexts.
+
+Key Features
+
+Multidimensional Plasticity Indices - Novel metrics for assessing plasticity across multiple traits
+
+Host-Pathogen Interaction Analysis - Specialized methods for insect-fungus systems
+
+Environmental Optimization - Find optimal conditions considering multiple traits
+
+Reaction Norm Visualization - Advanced plotting for genotype-environment interactions
+
+Meta-Analysis Tools - Comprehensive analysis of plasticity studies
+
+Trade-off Analysis - Quantify trade-offs between plasticities of different traits
+
+Data Simulation - Generate realistic data for plasticity studies
+
+Installation
+From GitHub (Development Version)
+# Install devtools if not already installed
+
+if (!require("devtools")) install.packages("devtools")
+
+\# Install phenop from GitHub
+
+devtools::install\_github("leonelstazione/phenop")
+
+
+
+Local Installation (from source)
+
+\# Download the package source and install
+
+devtools::install\_local("path/to/phenop")
+
+
 
 Quick Start
 
-r
-# 1. Generate example data
-data <- simulate_plasticity_data(
-  n_genotypes = 5,
-  n_environments = 3,
-  n_traits = 2
+
+
+\# Load the package
+
+library(phenop)
+
+
+
+\# Generate simulated plasticity data
+
+sim\_data <- simulate\_plasticity\_data(
+
+&nbsp; n\_genotypes = 10,
+
+&nbsp; n\_environments = 5, 
+
+&nbsp; n\_traits = 3
+
 )
 
-# 2. ANOVA analysis of plasticity
-result_anova <- anova_plasticity(
-  formula = trait1 ~ genotype * environment,
-  data = data,
-  return_type = "anova"
+
+
+\# Perform G×E ANOVA for plasticity analysis
+
+anova\_results <- anova\_plasticity(
+
+&nbsp; data = sim\_data,
+
+&nbsp; response = "trait\_value",
+
+&nbsp; genotype = "genotype", 
+
+&nbsp; environment = "environment"
+
 )
 
-# 3. Calculate multidimensional plasticity index
-result_mpi <- multidim_plasticity(
-  data = data,
-  traits = c("trait1", "trait2"),
-  environments = "environment",
-  groups = "genotype"
+
+
+\# Visualize reaction norms
+
+plot\_reaction\_norm(
+
+&nbsp; data = sim\_data,
+
+&nbsp; trait = "trait1",
+
+&nbsp; genotype = "genotype",
+
+&nbsp; environment = "environment"
+
 )
 
-# 4. Visualize reaction norms
-plot_reaction_norm(
-  data = data,
-  environment = environment,
-  trait = trait1,
-  genotype = genotype
+
+
+\# Calculate multidimensional plasticity index
+
+mpi\_results <- multidim\_plasticity(
+
+&nbsp; data = sim\_data,
+
+&nbsp; traits = c("trait1", "trait2", "trait3"),
+
+&nbsp; environment = "environment",
+
+&nbsp; genotype = "genotype"
+
 )
+
+
 
 Main Functions
 
-Function	Description	Status
-anova_plasticity()	ANOVA for G×E interactions 100% test coverage
-multidim_plasticity()	Multidimensional Plasticity Index (MPI)	93.94% test coverage
-plot_reaction_norm()	Reaction norm plots	100% test coverage
-simulate_plasticity_data()	Plasticity data simulation	100% test coverage
-plasticity_meta_analysis()	Meta-analysis of plasticity effects	0% coverage (in development)
-optimize_multidim_environment()	Environment optimization	0% coverage (in development)
-host_pathogen_interaction()	Host-pathogen interaction analysis	In development
-plasticity_tradeoffs()	Trade-off analysis	17.78% coverage
-safe_multidim_plasticity()	Error-tolerant plasticity analysis	51.28% coverage
 
-Detailed Examples
 
-Multidimensional Plasticity Analysis
-r
-# Calculate MPI for multiple traits
-mpi_result <- multidim_plasticity(
-  data = your_data,
-  traits = c("growth_rate", "resistance", "fecundity"),
-  environments = "temperature",
-  groups = "population",
-  weights = c(0.5, 0.3, 0.2)  # Optional weights
-)
+Core Analysis Functions
 
-# View results
-print(mpi_result$multidimensional_index)  # Global index
-print(mpi_result$individual_plasticity)   # Plasticity by group
-Plasticity Meta-Analysis
-r
-# Synthesize plasticity effects across studies
-meta_result <- plasticity_meta_analysis(
-  study_data = meta_data,
-  effect_size = "hedges_g",
-  variance = "variance",
-  moderator = "taxon",
-  method = "random"
-)
+multidim\_plasticity() - Calculate Multidimensional Plasticity Index (MPI)
 
-# Visualize effects
-# plot(meta_result)  # If plotting method exists
-Environment Optimization
-r
-# Find optimal conditions for multiple traits
-optimal <- optimize_multidim_environment(
-  data = experimental_data,
-  traits = c("yield", "quality", "stress_tolerance"),
-  environments = c("temperature", "humidity", "nutrients"),
-  groups = "genotype",
-  optimization_goal = "compromise"
-)
+safe\_multidim\_plasticity() - Robust version with error handling
 
-print(optimal$optimal_conditions)
-Host-Pathogen Interaction Analysis
-r
-# Analyze host-pathogen interactions
-interaction_result <- host_pathogen_interaction_extended(
-  host_data = host_data,
-  pathogen_data = pathogen_data,
-  host_traits = c("resistance", "growth_rate"),
-  pathogen_traits = c("virulence", "transmission_rate"),
-  time_var = "time_point",
-  environments = "treatment"
-)
+anova\_plasticity() - G×E ANOVA for phenotypic plasticity
 
-Project Status
+plasticity\_tradeoffs() - Identify trade-offs between plasticities
 
-Test Results
-r
-devtools::test()
-# [ FAIL 0 | WARN 0 | SKIP 3 | PASS 90 ]
-Code Coverage
-r
-library(covr)
-package_coverage()
-# phenop Coverage: 17.28%
-# Key functions:
-# - anova_plasticity.R: 100.00%
-# - multidim_plasticity.R: 93.94%
-# - plot_reaction_norm.R: 100.00%
-# - simulate_plasticity_data.R: 100.00%
-# - safe_multidim_plasticity.R: 51.28%
+plasticity\_meta\_analysis() - Meta-analysis of plasticity studies
+
+
+
+Host-Pathogen Analysis
+
+host\_pathogen\_interaction() - Analyze phenotypic plasticity in host-pathogen systems
+
+host\_pathogen\_interaction\_extended() - Comprehensive analysis with extended features
+
+
+
+Environmental Optimization
+
+optimize\_multidim\_environment() - Find optimal environmental conditions
+
+environmental\_optimization() - General environmental optimization
+
+
+
+Visualization
+
+plot\_multidim\_plasticity() - Visualize multidimensional plasticity
+
+plot\_reaction\_norm() - Create reaction norm plots
+
+plot\_multidim\_plasticity\_extended() - Advanced SAFE visualizations
+
+
+
+Data Management
+
+simulate\_plasticity\_data() - Generate realistic simulated data
+
+Multiple datasets - pheno\_parameters, pheno\_spatial, pheno\_time\_series
+
+
 
 Package Structure
 
-text
 phenop/
+
 ├── R/                          # Source code
-│   ├── anova_plasticity.R      # Fully tested
-│   ├── multidim_plasticity.R   # 93.94% coverage
-│   ├── plot_reaction_norm.R    # Fully tested
-│   ├── simulate_plasticity_data.R  # Fully tested
-│   ├── safe_multidim_plasticity.R  # 51.28% coverage
-│   ├── plasticity_meta_analysis.R  # In development
-│   ├── optimize_multidim_environment.R  # In development
-│   ├── host_pathogen_interaction_extended.R  # In development
-│   ├── plasticity_tradeoffs.R  # 17.78% coverage
-│   ├── plasticity_tradeoffs_extended.R  # In development
-│   ├── plasticity_meta_analysis_extended.R  # In development
-│   ├── plot_multidim_plasticity.R  # 46.51% coverage
-│   ├── plot_multidim_plasticity_extended.R  # In development
-│   └── plot_internals.R        # Internal functions
-├── tests/                      # Test suite
-│   └── testthat/
-│       ├── test_anova_plasticity.R
-│       ├── test_multidim_plasticity.R
-│       ├── test_plot_reaction_norm.R
-│       ├── test_simulate_plasticity_data.R
-│       ├── test_safe_multidim_plasticity.R
-│       ├── test_plasticity_meta_analysis.R
-│       ├── test_optimize_multidim_environment.R
-│       ├── test_host_pathogen_interaction_extended.R
-│       ├── test_plasticity_tradeoffs.R
-│       ├── test_plasticity_tradeoffs_extended.R
-│       ├── test_plasticity_meta_analysis_extended.R
-│       ├── test_plot_multidim_plasticity.R
-│       ├── test_plot_multidim_plasticity_extended.R
-│       └── test_plot_internals.R
-├── man/                        # Documentation
-├── vignettes/                  # Tutorials (coming soon)
-├── LICENSE                     # MIT License
-└── README.md                   # This file
 
-Development
+│   ├── analyze.R              # Statistical analysis functions
 
-Running Tests
-r
-# All tests
-devtools::test()
+│   ├── multidim\_plasticity.R  # Multidimensional plasticity indices
 
-# Specific test file
-testthat::test_file("tests/testthat/test_multidim_plasticity.R")
+│   ├── host\_pathogen\_interaction.R  # Host-pathogen analysis
 
-# Tests by pattern
-devtools::test(filter = "multidim")
-Checking Coverage
-r
-library(covr)
-cov <- package_coverage()
-print(cov)                     # Summary
-report(cov)                    # Interactive HTML report
-zero_coverage(cov)             # Uncovered lines
-Building Documentation
-r
-devtools::document()          # Update .Rd files
-devtools::install()           # Install locally
-devtools::check()             # Full package check
-Adding New Features
-r
-# Create new function
-usethis::use_r("new_function")
+│   ├── visualize.R            # Visualization functions
 
-# Create corresponding test
-usethis::use_test("new_function")
+│   └── ... (25+ additional files)
 
-# Run tests for new function
-devtools::test(filter = "new_function")
+├── data/                      # Package datasets
 
-Learn More
-Vignettes (Coming Soon)
-r
-# Install with vignettes
-devtools::install_github("yourusername/phenop", build_vignettes = TRUE)
+│   ├── pheno\_parameters.rda   # Phenological parameters dataset
 
-# View available vignettes
-vignette(package = "phenop")
-vignette("introduction-phenop")
-Function Reference
-r
-# Help for specific functions
-?anova_plasticity
-?multidim_plasticity
-?plot_reaction_norm
-?simulate_plasticity_data
-?safe_multidim_plasticity
-Example Datasets
-r
-# List available datasets
-data(package = "phenop")
+│   ├── pheno\_spatial.rda      # Spatial phenology data
 
-# Load example dataset
-data("demo_data")
+│   └── pheno\_time\_series.rda  # Time series data
+
+├── tests/                     # Test suite
+
+│   └── testthat/              # Unit tests
+
+├── vignettes/                 # Tutorials and examples
+
+│   ├── phenop\_vignette.Rmd    # Main tutorial
+
+│   └── phenop\_vignette\_complete.Rmd  # Complete demonstration
+
+└── man/                       # Documentation
+
+
+Example Analysis
+
+
+Complete Workflow Example
+
+library(phenop)
+
+library(ggplot2)
+
+
+
+\# Load example data
+
+data("pheno\_parameters")
+
+
+
+\# Analyze plasticity across environments
+
+plasticity\_results <- multidim\_plasticity(
+
+&nbsp; data = pheno\_parameters,
+
+&nbsp; traits = c("sos", "eos", "los", "ndvi\_max"),
+
+&nbsp; environment = "year",
+
+&nbsp; genotype = "site"
+
+)
+
+
+
+\# Visualize results
+
+plot\_multidim\_plasticity(plasticity\_results)
+
+
+
+\# Perform meta-analysis of plasticity
+
+meta\_results <- plasticity\_meta\_analysis(
+
+&nbsp; data = plasticity\_results,
+
+&nbsp; effect\_size = "plasticity\_index",
+
+&nbsp; study\_id = "site"
+
+)
+
+
+
+\# Analyze trade-offs
+
+tradeoff\_results <- plasticity\_tradeoffs(
+
+&nbsp; data = plasticity\_results,
+
+&nbsp; traits = c("sos", "eos", "los")
+
+)
+
+
+
+Host-Pathogen System Analysis
+
+
+
+\# Analyze insect-fungus interactions
+
+host\_pathogen\_results <- host\_pathogen\_interaction(
+
+&nbsp; data = fungi\_insect\_data,
+
+&nbsp; host\_trait = "host\_size",
+
+&nbsp; pathogen\_trait = "infection\_rate",
+
+&nbsp; environment = "temperature"
+
+)
+
+
+
+\# Extended analysis with multiple traits
+
+extended\_results <- host\_pathogen\_interaction\_extended(
+
+&nbsp; data = fungi\_insect\_data,
+
+&nbsp; host\_traits = c("host\_size", "immune\_response"),
+
+&nbsp; pathogen\_traits = c("infection\_rate", "sporulation"),
+
+&nbsp; environmental\_gradient = "temperature"
+
+)
+
+
+
+Datasets Included
+
+
+
+pheno\_parameters
+
+Size: ~1000 observations, 44 variables
+
+Description: Comprehensive dataset of phenological parameters across multiple sites and species
+
+Variables: Includes SOS, EOS, LOS, NDVI metrics, GPP, environmental variables, soil properties
+
+Use: General plasticity analysis, environmental correlations
+
+pheno\_spatial
+
+Size: 150 spatial features, 24 variables
+
+Description: Spatial dataset with geographical and ecological context
+
+Variables: Coordinates, elevation, climate, land cover, disturbance history
+
+Use: Spatial analysis, landscape-scale plasticity studies
+
+pheno\_time\_series
+
+Size: Time series data with 29 variables
+
+Description: Temporal observations of phenological metrics
+
+Variables: Daily/seasonal measurements, vegetation indices, climate data
+
+Use: Temporal trends, seasonality analysis, time-series plasticity
+
+fungi\_insect\_data
+
+Size: Simulated dataset for host-pathogen interactions
+
+Description: Phenotypic plasticity in fungus-insect host-pathogen systems
+
+Variables: Host traits, pathogen traits, environmental conditions
+
+Use: Host-pathogen coevolution, infection dynamics
+
+
+
+Technical Details
+
+
+Dependencies
+
+Imports:
+
+&nbsp; dplyr (>= 1.0.0), ggplot2 (>= 3.4.0), lme4 (>= 1.1.0),
+
+&nbsp; mgcv (>= 1.8.0), viridis (>= 0.6.0), patchwork (>= 1.1.0),
+
+&nbsp; ggridges (>= 0.5.0), maps (>= 3.4.0), performance (>= 0.10.0),
+
+&nbsp; FactoMineR (>= 2.4.0), cluster (>= 2.1.0), MASS (>= 7.3.0),
+
+&nbsp; magrittr (>= 2.0.3), plotly (>= 4.10.0), sf, tidyr, stats, methods
+
+
+
+System Requirements
+
+R version >= 4.0.0
+
+100MB disk space (primarily for example datasets)
+
+Standard R installation capabilities
+
+Performance
+
+Optimized for datasets with up to 10^5 observations
+
+Parallel processing capabilities for large analyses
+
+Memory-efficient implementations for multidimensional calculations
+
+
+
+Documentation
+Vignettes
+
+\# Access built-in tutorials
+
+vignette("phenop\_vignette", package = "phenop")
+
+vignette("phenop\_vignette\_complete", package = "phenop")
+
+
+
+Help System
+# Access function documentation
+
+?multidim\_plasticity
+
+?plot\_reaction\_norm
+
+?pheno\_parameters
+
+\# List all exported functions
+
+ls("package:phenop")
+
+
+
+Testing
+The package includes comprehensive tests covering:
+
+Functionality verification
+
+Input validation
+
+Output structure checks
+
+Edge case handling
+
+Performance benchmarks
+
+Run tests with:
+
+devtools::test("phenop")
+
 
 Contributing
+We welcome contributions! Please follow these steps:
 
-Contributions are welcome! Please:
+Fork the repository on GitHub
 
-Report bugs or suggestions as issues
+Clone your fork locally
 
-Submit pull requests for improvements
+Create a branch for your feature (git checkout -b feature/amazing-feature)
 
-Suggest new features
+Commit your changes (git commit -m 'Add amazing feature')
+
+Push to the branch (git push origin feature/amazing-feature)
+
+Open a Pull Request
+
+
 
 Contribution Guidelines
-r
-# 1. Fork the repository
-# 2. Clone your fork locally
-# 3. Create a branch for your feature
-# 4. Develop with tests
-# 5. Run devtools::check()
-# 6. Submit pull request
-Development Setup
-r
-# Clone and setup
-git clone https://github.com/yourusername/phenop.git
-cd phenop
-Rscript -e "devtools::install_deps()"
-Rscript -e "devtools::load_all()"
+
+Follow the tidyverse style guide
+
+Add tests for new functionality
+
+Update documentation accordingly
+
+Ensure compatibility with existing functions
+
+
 
 Citation
 
+
 If you use phenop in your research, please cite:
 
-Leonel Stazione (2026). phenop: Multidimensional Phenotypic Plasticity Analysis. R package version 0.1.0.
 
-BibTeX entry:
 
-bibtex
-@Manual{phenop2026,
-  title = {phenop: Multidimensional Phenotypic Plasticity Analysis},
-  author = {LEonel Stazione},
-  year = {2026},
-  note = {R package version 0.1.0},
-  url = {https://github.com/yourusername/phenop},
+@software{phenop\_package,
+
+&nbsp; title = {phenop: Multidimensional Analysis of Phenotypic Plasticity},
+
+&nbsp; author = {Leonel Stazione},
+
+&nbsp; year = {2026},
+
+&nbsp; url = {https://github.com/leonelstazione/phenop},
+
+&nbsp; note = {R package version 0.1.0}
+
 }
 
-License
 
-MIT License - see LICENSE file for details.
+
+License
+This package is licensed under the MIT License. See the LICENSE file for details.
+
+
+
+Bug Reports and Issues
+Please report bugs, issues, or feature requests on the GitHub Issues page.
+
+
 
 Contact
-
 Author: Leonel Stazione
+Email: leonelstazione@hotmail.com
+GitHub: leonelstazione
 
-GitHub: @leonelstazione
 
-Issues: Report issues
 
-Email: leoneldaniel.stazione@unifi.it
+Acknowledgments
 
-Roadmap
+This package was developed as part of research on phenotypic plasticity in insect-fungus systems. Special thanks to contributors and testers.
 
-Version 0.2.0 (Planned)
-Improve coverage to >50%
-
-Add vignettes and tutorials
-
-Implement missing function features
-
-Add more example datasets
-
-Version 1.0.0 (Future)
-Complete all function implementations
-
-Achieve >80% test coverage
-
-CRAN submission
-
-Comprehensive documentation

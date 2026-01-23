@@ -6,3 +6,7 @@
 *.tar.gz 
 *.check/ 
 .Rcheck/ 
+inst/doc
+.Rproj.user
+/doc/
+/Meta/

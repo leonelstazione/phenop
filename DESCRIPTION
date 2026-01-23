@@ -15,21 +15,34 @@ BugReports: https://github.com/leonelstazione/phenop/issues
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr
+LazyDataCompression: xz
 Depends: 
     R (>= 4.0.0)
 Imports:
-    dplyr (>= 1.0.0),
-    ggplot2 (>= 3.4.0),
-    magrittr (>= 2.0.0),
-    MASS,
-    stats,
-    tibble (>= 3.0.0),
-    tidyr (>= 1.0.0)
+    dplyr,
+    ggplot2,
+    tidyr,
+    lme4,
+    mgcv,
+    performance,
+    FactoMineR,
+    cluster,
+    patchwork,
+    magrittr,
+    stats
 Suggests:
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    covr
-
+    kableExtra,
+    akima,
+    devtools,
+    MASS,
+    ggridges,
+    plotly,
+    maps,
+    viridis,
+    sf
+Config/testthat/edition: 3

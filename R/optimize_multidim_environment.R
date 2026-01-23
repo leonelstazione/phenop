@@ -15,15 +15,12 @@
 optimize_multidim_environment <- function(data, traits, environments, groups,
                                           optimization_goal = "compromise",
                                           weights = NULL) {
-
-  # Validación básica
+  # Basic validation
   if (!all(environments %in% names(data))) {
     stop("Some environment variables not found in data")
   }
-
   # Versión SIMPLIFICADA pero FUNCIONAL
   optimal_value <- .simple_optimization(data, traits, environments[1])
-
   return(list(
     optimal_conditions = list(
       optimal_environment = optimal_value,
@@ -34,14 +31,11 @@ optimize_multidim_environment <- function(data, traits, environments, groups,
     method = "Multidimensional Environmental Optimization (Simplified)"
   ))
 }
-
 # Internal function: SIMPLE but WORKING version
 .simple_optimization <- function(data, traits, environment_var) {
-
   # Algoritmo simple pero funcional: encontrar el ambiente que maximiza la media de los traits
   env_values <- unique(data[[environment_var]])
   env_values <- env_values[!is.na(env_values)]
-
   # Calcular score para cada valor ambiental
   scores <- sapply(env_values, function(env_val) {
     subset_data <- data[data[[environment_var]] == env_val, ]
@@ -50,19 +44,16 @@ optimize_multidim_environment <- function(data, traits, environments, groups,
     })
     mean(trait_means, na.rm = TRUE)  # Score compuesto
   })
-
   # Encontrar el valor óptimo
   optimal_index <- which.max(scores)
   optimal_value <- as.numeric(env_values[optimal_index])
-
   return(optimal_value)
 }
-
 # Placeholder para funciones internas más complejas (futura expansión)
 .find_multidim_optima <- function(data, traits, environments, groups, goal, weights) {
   return(list(optima = list(optimal_environment = NA), tradeoffs = NA))
 }
-
 .calculate_optimization_landscape <- function(data, traits, environments) {
   return(NA)
 }
+

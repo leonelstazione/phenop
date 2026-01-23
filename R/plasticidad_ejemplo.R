@@ -1,8 +1,9 @@
-#' Dataset de ejemplo para plasticidad fenotipica
+#' Example dataset para plasticidad fenotipica
 #'
-#' Datos simulados para demostrar las funciones del paquete phenop.
+#' Simulated data to demonstrate las funciones of the package phenop.
 #'
 #' @format Un data.frame con 200 observaciones y 6 variables.
 #' @source Simulado
 #' @name plasticidad_ejemplo
 NULL
+

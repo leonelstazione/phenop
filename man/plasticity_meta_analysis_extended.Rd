@@ -56,7 +56,7 @@ meta_data <- data.frame(
   variance = runif(n_studies, 0.05, 0.2),
   year = 2000 + 1:n_studies,
   taxon = sample(c("Insect", "Fungus", "Plant"), n_studies, replace = TRUE),
-  trait_type = sample(c("Morphological", "Physiological", "Life History"), 
+  trait_type = sample(c("Morphological", "Physiological", "Life History"),
                      n_studies, replace = TRUE)
 )
 

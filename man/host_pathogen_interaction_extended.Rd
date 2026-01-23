@@ -22,65 +22,22 @@ host_pathogen_interaction_extended(
 
 \item{pathogen_data}{Data frame with pathogen phenotypic data}
 
-\item{host_traits}{Character vector of host trait names to analyze}
+\item{host_traits}{Character vector of host trait names}
 
-\item{pathogen_traits}{Character vector of pathogen trait names to analyze}
+\item{pathogen_traits}{Character vector of pathogen trait names}
 
-\item{interaction_metrics}{Character vector of metrics to calculate. Options:
-"correlation" (trait correlations), "plasticity_matching" (plasticity similarity),
-"arms_race_index" (co-evolutionary dynamics), "infection_success" (infection outcomes)}
+\item{interaction_metrics}{Metrics to calculate}
 
-\item{environments}{Character vector of environmental variables}
+\item{environments}{Environmental variables}
 
-\item{host_group}{Character string specifying host grouping variable}
+\item{host_group}{Column name for host groups}
 
-\item{pathogen_group}{Character string specifying pathogen grouping variable}
+\item{pathogen_group}{Column name for pathogen groups}
 
-\item{infection_data}{Optional data frame with infection outcomes}
+\item{infection_data}{Optional infection data}
 
 \item{...}{Additional arguments}
 }
-\value{
-A list containing:
-\item{interaction_correlations}{Correlations between host and pathogen traits}
-\item{plasticity_matching}{Indices of plasticity similarity}
-\item{arms_race_metrics}{Co-evolutionary dynamics metrics}
-\item{infection_models}{Models predicting infection success}
-\item{environmental_interactions}{Plasticity-environment relationships}
-\item{visualization_data}{Data prepared for plotting}
-}
 \description{
 Comprehensive analysis of phenotypic plasticity in host-pathogen systems.
-This function analyzes how plasticity patterns in hosts and pathogens interact
-and influence infection dynamics across multiple environments.
-}
-\examples{
-data(demo_data)
-
-# Prepare host (insect) data
-host_data <- demo_data \%>\%
-  dplyr::select(insect_population, temperature, humidity,
-                insect_size, resistance) \%>\%
-  dplyr::distinct()
-
-# Prepare pathogen (fungus) data
-pathogen_data <- demo_data \%>\%
-  dplyr::select(fungus_strain, temperature, humidity,
-                fungus_growth, virulence) \%>\%
-  dplyr::distinct()
-
-# Run interaction analysis
-interaction_result <- host_pathogen_interaction_extended(
-  host_data = host_data,
-  pathogen_data = pathogen_data,
-  host_traits = c("insect_size", "resistance"),
-  pathogen_traits = c("fungus_growth", "virulence"),
-  interaction_metrics = c("correlation", "plasticity_matching"),
-  environments = c("temperature", "humidity"),
-  host_group = "insect_population",
-  pathogen_group = "fungus_strain"
-)
-
-print(interaction_result)
-
 }

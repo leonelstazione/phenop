@@ -2,7 +2,7 @@
 % Please edit documentation in R/plasticidad_ejemplo.R
 \name{plasticidad_ejemplo}
 \alias{plasticidad_ejemplo}
-\title{Dataset de ejemplo para plasticidad fenotipica}
+\title{Example dataset para plasticidad fenotipica}
 \format{
 Un data.frame con 200 observaciones y 6 variables.
 }
@@ -10,5 +10,5 @@ Un data.frame con 200 observaciones y 6 variables.
 Simulado
 }
 \description{
-Datos simulados para demostrar las funciones del paquete phenop.
+Simulated data to demonstrate las funciones of the package phenop.
 }

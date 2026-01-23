@@ -21,7 +21,6 @@
 #' plot_reaction_norm(datos, env, trait, gen)
 plot_reaction_norm <- function(data, environment, trait, genotype,
                                     add_points = TRUE, add_se = TRUE) {
-
   # Calcular promedios y errores estandar
   plot_data <- data %>%
     dplyr::group_by({{genotype}}, {{environment}}) %>%
@@ -30,22 +29,20 @@ plot_reaction_norm <- function(data, environment, trait, genotype,
       se = stats::sd({{trait}}, na.rm = TRUE) / sqrt(dplyr::n()),
       .groups = "drop"
     )
-
   # Crear el grafico base
   p <- ggplot2::ggplot(plot_data,
                        ggplot2::aes(x = {{environment}},
                                     y = mean_trait,
                                     color = {{genotype}},
                                     group = {{genotype}})) +
-    ggplot2::geom_line(size = 1) +
+    ggplot2::geom_line(linewidth = 1) +
     ggplot2::labs(
-      title = "Normas de Reaccion Fenotipica",
-      x = "Ambiente",
-      y = "Valor del Rasgo",
-      color = "Genotipo"
+      title = "Phenotypic Reaction Norms",
+      x = "Environment",
+      y = "Trait Value",
+      color = "Genotype"
     ) +
     ggplot2::theme_minimal()
-
   # Agregar barras de error si se solicita
   if (add_se) {
     p <- p + ggplot2::geom_errorbar(
@@ -53,11 +50,10 @@ plot_reaction_norm <- function(data, environment, trait, genotype,
       width = 0.1
     )
   }
-
   # Agregar puntos si se solicita
   if (add_points) {
     p <- p + ggplot2::geom_point(size = 3)
   }
-
   return(p)
 }
+

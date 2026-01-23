@@ -2,41 +2,27 @@ name: JOSS paper preview
 
 on:
   push:
-    branches:
-      - main  # se ejecuta en cualquier commit a main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-paper:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Clonar el repositorio
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2️⃣ Configurar R
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.3'
-
-      # 3️⃣ Instalar dependencias del paper
-      - name: Install dependencies
+      - name: Build JOSS paper (Docker official)
         run: |
-          install.packages(c("remotes", "rcmdcheck"))
-          remotes::install_deps(dependencies = TRUE)
+          docker pull openjournals/joss
+          docker run --rm \
+            -v ${{ github.workspace }}:/data \
+            openjournals/joss
 
-      # 4️⃣ Construir el paper JOSS
-      - name: Build JOSS paper
-        uses: openjournals/joss-paper-action@v1
-        with:
-          journal: joss
-
-      # 5️⃣ Subir el PDF generado como artefacto
       - name: Upload PDF
         uses: actions/upload-artifact@v4
         with:
           name: joss-paper-pdf
-          path: paper/_paperdown/*.pdf
+          path: paper/paper.pdf

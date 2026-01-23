@@ -9,24 +9,30 @@ on:
       - paper/**
 
 jobs:
-  paper:
-    runs-on: macos-latest  # macOS runner
-    steps:
-      # 1️⃣ Clonar el repo
-      - uses: actions/checkout@v4
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
-      # 2️⃣ Instalar R (versión moderna que existe)
-      - name: Setup R
+    steps:
+      # 1️⃣ Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configurar R
+      - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: 4.1.1
+          r-version: "4.1.1"
+          use-public-rspm: true
 
-      # 3️⃣ Instalar dependencias necesarias para rcmdcheck/JOSS
-      - name: Install R packages
+      # 3️⃣ Instalar dependencias necesarias
+      - name: Install dependencies
         run: |
-          install.packages(c("remotes", "rcmdcheck"), repos="https://cloud.r-project.org")
-      
-      # 4️⃣ Build JOSS paper
+          install.packages(c("remotes", "rcmdcheck"))
+
+      # 4️⃣ Construir el paper para JOSS
       - name: Build JOSS paper
         uses: openjournals/openjournals-docker-action@v1
         with:

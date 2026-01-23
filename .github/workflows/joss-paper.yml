@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - paper/**
+      - .github/workflows/joss-paper.yml
   pull_request:
     paths:
       - paper/**
+      - .github/workflows/joss-paper.yml
 
 permissions:
   contents: read

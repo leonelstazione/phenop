@@ -1,0 +1,12 @@
+citHeader("To cite phenop in publications, please use:")
+
+citEntry(
+  entry    = "Manual",
+  title    = "phenop: Multidimensional Analysis of Phenotypic Plasticity in Eco-Evolutionary Contexts",
+  author   = person("Leonel", "Stazione"),
+  year     = "2026",
+  note     = "R package version 0.1.0",
+  url      = "https://github.com/leonelstazione/phenop",
+  textVersion =
+    "Stazione, L. (2026). phenop: Multidimensional Analysis of Phenotypic Plasticity in Eco-Evolutionary Contexts. R package version 0.1.0. https://github.com/leonelstazione/phenop"
+)

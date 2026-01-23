@@ -1,1 +1,42 @@
+name: JOSS paper preview
 
+on:
+  push:
+    paths:
+      - paper/**
+  pull_request:
+    paths:
+      - paper/**
+
+jobs:
+  build-paper:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Clonar el repositorio
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Configurar R (versión moderna, no 3.6.3)
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3'
+
+      # 3️⃣ Instalar dependencias
+      - name: Install dependencies
+        run: |
+          install.packages(c("remotes", "rcmdcheck"))
+          remotes::install_deps(dependencies = TRUE)
+
+      # 4️⃣ Construir el paper JOSS usando Docker
+      - name: Build JOSS paper
+        uses: openjournals/openjournals-docker-action@v1
+        with:
+          journal: joss
+
+      # 5️⃣ Subir el PDF generado como artefacto
+      - name: Upload PDF
+        uses: actions/upload-artifact@v3
+        with:
+          name: joss-paper-pdf
+          path: paper/_paperdown/*.pdf

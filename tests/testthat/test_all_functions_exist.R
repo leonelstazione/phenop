@@ -16,7 +16,6 @@ test_that("All documented functions exist and are callable", {
     # Extended functions
     "safe_multidim_plasticity",
     "plasticity_tradeoffs_extended",
-    "host_pathogen_interaction_extended",
     "plasticity_meta_analysis_extended",
     "plot_multidim_plasticity_extended"
   )

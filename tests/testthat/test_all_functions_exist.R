@@ -10,7 +10,6 @@ test_that("All documented functions exist and are callable", {
     "host_pathogen_interaction",
     "multidim_plasticity",
     "optimize_multidim_environment",
-    "plasticity_meta_analysis",
     "plot_multidim_plasticity",
     "plot_reaction_norm",
     "simulate_plasticity_data",

@@ -15,4 +15,4 @@
 ^pkgdown$
 ^README\.Rmd$
 ^_pkgdown\.yml$
-^docs$
+^docs$^paper$

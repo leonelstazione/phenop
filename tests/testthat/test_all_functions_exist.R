@@ -11,7 +11,6 @@ test_that("All documented functions exist and are callable", {
     "multidim_plasticity",
     "optimize_multidim_environment",
     "plasticity_meta_analysis",
-    "plasticity_tradeoffs",
     "plot_multidim_plasticity",
     "plot_reaction_norm",
     "simulate_plasticity_data",

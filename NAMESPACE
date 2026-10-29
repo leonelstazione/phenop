@@ -19,7 +19,6 @@ export(perform_cluster_analysis)
 export(perform_pca_analysis)
 export(plasticity_meta_analysis)
 export(plasticity_meta_analysis_extended)
-export(plasticity_tradeoffs)
 export(plasticity_tradeoffs_extended)
 export(plot_density_ridges)
 export(plot_internals)
@@ -36,45 +35,53 @@ export(simulate_plasticity_data)
 import(ggplot2)
 importFrom(FactoMineR,PCA)
 importFrom(cluster,silhouette)
-importFrom(dplyr,"%>%")
-importFrom(dplyr,across)
-importFrom(dplyr,all_of)
-importFrom(dplyr,arrange)
-importFrom(dplyr,do)
-importFrom(dplyr,filter)
-importFrom(dplyr,group_by)
-importFrom(dplyr,mutate)
-importFrom(dplyr,select)
-importFrom(dplyr,slice_head)
-importFrom(dplyr,summarise)
-importFrom(dplyr,ungroup)
+importFrom(dplyr,
+  "%>%",
+  across,
+  all_of,
+  arrange,
+  do,
+  filter,
+  group_by,
+  mutate,
+  select,
+  slice_head,
+  summarise,
+  ungroup
+)
 importFrom(ggplot2,ggplot)
-importFrom(lme4,fixef)
-importFrom(lme4,lmer)
-importFrom(lme4,ranef)
+importFrom(lme4,
+  fixef,
+  lmer,
+  ranef
+)
 importFrom(magrittr,"%>%")
 importFrom(mgcv,gam)
-importFrom(patchwork,plot_annotation)
-importFrom(patchwork,plot_layout)
+importFrom(patchwork,
+  plot_annotation,
+  plot_layout
+)
 importFrom(performance,r2)
-importFrom(stats,aggregate)
-importFrom(stats,anova)
-importFrom(stats,as.formula)
-importFrom(stats,coef)
-importFrom(stats,complete.cases)
-importFrom(stats,cor)
-importFrom(stats,cor.test)
-importFrom(stats,dist)
-importFrom(stats,kmeans)
-importFrom(stats,lm)
-importFrom(stats,loess)
-importFrom(stats,na.omit)
-importFrom(stats,pchisq)
-importFrom(stats,pnorm)
-importFrom(stats,prcomp)
-importFrom(stats,qnorm)
-importFrom(stats,rnorm)
-importFrom(stats,sd)
-importFrom(stats,var)
-importFrom(stats,weighted.mean)
+importFrom(stats,
+  aggregate,
+  anova,
+  as.formula,
+  coef,
+  complete.cases,
+  cor,
+  cor.test,
+  dist,
+  kmeans,
+  lm,
+  loess,
+  na.omit,
+  pchisq,
+  pnorm,
+  prcomp,
+  qnorm,
+  rnorm,
+  sd,
+  var,
+  weighted.mean
+)
 importFrom(utils,data)
